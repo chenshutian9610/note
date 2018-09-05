@@ -2,139 +2,137 @@
 * JavaBean 中属性的命名规范，前两个字母要么是小写，要么一起是大写，不然其相应的 getter 和 setter 方法会出错，如 IDCard，idCard
 
 * DI，依赖注入，可以分为属性注入，构造函数注入，静态和动态工厂注入
-	属性注入（要求含有一个无参构造函数）
-		<bean id="car" class="My.Car" p:name="大Q吧"/>		//	p 是新版引进的一个 schema，用于取代 property
-		<bean id="user" class="My.User">
-			<property name="username" value="chen"/>
-			<property name="car" ref="car"/>								//	相当于 p:car-ref="car"，在属性名后加上 -ref 就可以用于引用
-		</bean>
-	构造函数注入
-		<bean id="user" class="My.User">
-			<constructor-arg index="0" type="java.lang.String" value="chen">	//	index 为参数位置，type 为参数类型，都可以省略
-			<constructor-arg type="int" value="20"/>
-		</bean>
-	静态工厂注入
-		<bean id="user" class="My.User" factory-method="initUser">					//	通过 User 的静态方法 initUser 来实例化
-			<constructor-arg index="0" value="chen"/>													
-		</bean>
-	动态工厂注入
-		<bean id="user" class="My.User" p:name="chen"/>
-		<bean id="idCard" factory-bean="user" factory-method="getID"/>			//	通过 User 的普通方法 getID 返回一个 IDCard 对象
-		
+  属性注入（要求含有一个无参构造函数）
+	<bean id="car" class="My.Car" p:name="大Q吧"/>		//	p 是新版引进的一个 schema，用于取代 property
+	<bean id="user" class="My.User">
+		<property name="username" value="chen"/>
+		<property name="car" ref="car"/>				//	相当于 p:car-ref="car"，在属性名后加上 -ref 就可以用于引用
+	</bean>
+  构造函数注入
+	<bean id="user" class="My.User">
+		<constructor-arg index="0" type="java.lang.String" value="chen">	//	index 为参数位置，type 为参数类型，都可以省略
+		<constructor-arg type="int" value="20"/>
+	</bean>
+  静态工厂注入
+	<bean id="user" class="My.User" factory-method="initUser">				//	通过 User 的静态方法 initUser 来实例化
+		<constructor-arg index="0" value="chen"/>													
+	</bean>
+  动态工厂注入
+	<bean id="user" class="My.User" p:name="chen"/>
+	<bean id="idCard" factory-bean="user" factory-method="getID"/>			//	通过 User 的普通方法 getID 返回一个 IDCard 对象
+	
 * xml 特殊字符转化
-		& 	&amp		
-		"		&quot
-		'		$apos
-		<		$lt
-		>		$gt
-	* 在 xml 文件中的 && || ! 可以使用 and or not 表示，使用 <null/> 表示值为 null
+	& 	&amp		
+	"		&quot
+	'		$apos
+	<		$lt
+	>		$gt
+  * 在 xml 文件中的 && || ! 可以使用 and or not 表示，使用 <null/> 表示值为 null
 	
 * 可以在 beans.xml 中使用 import 标签的 resource 加载其他配置文件
-		<import resource="classpath:applicationContext.xml"/>
+  <import resource="classpath:applicationContext.xml"/>
 		
 * 父子容器（子容器构造函数第一个参数为 String[] 型）
-		parent.xml
-			<bean id="user" class="my.User" abstract="true"/>
-			<bean id="one" parent="user" p:name="chen"/>				//	parent 和 abstract 是配套的，是父子 bean，而不是父子容器
-		son.xml
-			<bean id="one" parent="user" p:name="chen"/>
-			<bean id="card" class="my.IDCard">
-				<property name="user">
-					<ref parent="one">															//	这里引用了父容器的 one，而不是当前容器
-				</property>
-			</bean>
-		
-		ApplicationContext pContext=new ClassPathXmlApplicationContext("parent.xml");
-		ApplicationContext sContext=new ClassPathXmlApplicationContext(new String[]{son.xml},pContext);
+	parent.xml
+		<bean id="user" class="my.User" abstract="true"/>
+		<bean id="one" parent="user" p:name="chen"/>				//	parent 和 abstract 是配套的，是父子 bean，而不是父子容器
+	son.xml
+		<bean id="one" parent="user" p:name="chen"/>
+		<bean id="card" class="my.IDCard">
+			<property name="user">
+				<ref parent="one">									//	这里引用了父容器的 one，而不是当前容器
+			</property>
+		</bean>
+	
+	ApplicationContext pContext=new ClassPathXmlApplicationContext("parent.xml");
+	ApplicationContext sContext=new ClassPathXmlApplicationContext(new String[]{son.xml},pContext);
 
 * 级联属性
-		<bean id="user" class="my.User">
-			<property name="corporation.phone" value="10086"/>		//	可以为属性的属性复制
-		<bean>
+	<bean id="user" class="my.User">
+		<property name="corporation.phone" value="10086"/>		//	可以为属性的属性复制
+	<bean>
 		
 * 集合类型
-	List
-		<list>
-			<value>chen</value>
-			<value>lin</value>
-			<value>li</value>
-		<list>
-		<util:list list-class="java.util.LinkedList">
-			<value>chen</value>
-			<value>lin</value>
-			<value>li</value>
-		</util:list>
-	Set
-		<set>
-			<value>chen</value>
-			<value>lin</value>
-			<value>li</value>
-		</set>
-	Map
-		<map>
-			<entry key="china" value="nihao"/>
-			<entry key="US" value="hello"/>
-		</map>
-	Properties	
-		<props>
-			<prop key="china">nihao</prop>
-			<prop key="US">hello</prop>
-		</props>
-	* set 和 map 也有 util:list 一样的形式，一样有 set-class 和 map-class 属性来指定具体实现类
-	* Properties 类是一个哈希表，所以结构和 map 差不多
-			<bean id="user" class="my.User">	
-				<property name="greet">										//	User 中的 greet 属性为 Properties 类型
-          <props>
-              <prop key="china">nihao</prop>			// 	entry 不能使用这种格式，prop 也不能使用 value 属性
-              <prop key="US">hello</prop>
-          </props>
-        </property>
-			</bean>
-	* 集合可以使用 merge 属性融合父 bean 的值
-			<bean id="parent" class="my.User">					//	父 bean 可以不使用 abstract，但是 context 初始化容器的时候会被实例化
-				<property name="week">
-					<map>
-						<entry key="Mon" value="星期一"/>
-					</map>
-				</property>
-			<bean>
-			<bean id="child" parent="parent">
-				<property name="week">
-					<map merge="true">											//	如果没有使用 merge 则覆盖父类的值，即 Mon 为 null
-						<entry key="Fri" value="星期五"/>
-					</map>
-				</property>
-			<bean>
+  List
+	<list>
+		<value>chen</value>
+		<value>lin</value>
+		<value>li</value>
+	<list>
+	<util:list list-class="java.util.LinkedList">
+		<value>chen</value>
+		<value>lin</value>
+		<value>li</value>
+	</util:list>
+  Set
+	<set>
+		<value>chen</value>
+		<value>lin</value>
+		<value>li</value>
+	</set>
+  Map
+	<map>
+		<entry key="china" value="nihao"/>
+		<entry key="US" value="hello"/>
+	</map>
+  Properties	
+	<props>
+		<prop key="china">nihao</prop>
+		<prop key="US">hello</prop>
+	</props>
+  * set 和 map 也有 util:list 一样的形式，一样有 set-class 和 map-class 属性来指定具体实现类
+  * Properties 类是一个哈希表，所以结构和 map 差不多
+	<bean id="user" class="my.User">	
+		<property name="greet">						//	User 中的 greet 属性为 Properties 类型
+			<props>
+				<prop key="china">nihao</prop>		// 	entry 不能使用这种格式，prop 也不能使用 value 属性
+				<prop key="US">hello</prop>
+			</props>
+		</property>
+	</bean>
+* 集合可以使用 merge 属性融合父 bean 的值
+	<bean id="parent" class="my.User">				//	父 bean 可以不使用 abstract，但是 context 初始化容器的时候会被实例化
+		<property name="week">
+			<map>
+				<entry key="Mon" value="星期一"/>
+			</map>
+		</property>
+	<bean>
+	<bean id="child" parent="parent">
+		<property name="week">
+			<map merge="true">						//	如果没有使用 merge 则覆盖父类的值，即 Mon 为 null
+				<entry key="Fri" value="星期五"/>
+			</map>
+		</property>
+	<bean>
 			
 * 在开发时有时有一种需求，需要在 singleton 范围的 bean 中注入一个 prototype 的 bean
-	比如有两个对象，boss 和 car，要求每次 boss 使用 getCar 时获取到的是不同的 car 对象（boss 为 singleton，car 为 prototype）
-	方法一
-		在 Boss 类中的 getCar 方法改为
-			public Car getCar(){
-				return factory.getBean("car",Car.class);	//	需要实现 BeanFactoryAware 接口，最简单但紧耦合
-			}
-	方法二
-		在 beans.xml 文件中
-			<bean id="car" class="my.Car" p:brand="大Q吧"/>
-			<bean id="boss" class="my.Boss">			
-				<lookup-method name="getCar" bean="car"/>	//	通过 cglib 生成子类
-			</bean>
+  比如有两个对象，boss 和 car，要求每次 boss 使用 getCar 时获取到的是不同的 car 对象（boss 为 singleton，car 为 prototype）
+  方法一
+	在 Boss 类中的 getCar 方法改为
+	public Car getCar(){
+		return factory.getBean("car",Car.class);	//	需要实现 BeanFactoryAware 接口，最简单但紧耦合
+	}
+  方法二
+	在 beans.xml 文件中
+	<bean id="car" class="my.Car" p:brand="大Q吧"/>
+	<bean id="boss" class="my.Boss">			
+		<lookup-method name="getCar" bean="car"/>	//	通过 cglib 生成子类
+	</bean>
 			
 * 在开发时一般只使用 prototype 和 singleton 两种范围，但有时也可能会使用另外三种，需要在 web 容器中使用监听器来监听 http 请求
-	web.xml 注册 RequestContextListener 监听 http 请求，注册 ContextLoaderListener 监听 web 容器
-		<listener>
-			<listener-class>
-				org.springframework.web.context.request.RequestContextListener
-			</listener-class>
-		</listener>
-		<listener>
-        <listener-class>
-					org.springframework.web.context.ContextLoaderListener
-				</listener-class>
-    </listener>
-	beans.xml 中有时需要使用 <aop:scoped-proxy/> 创建代理
-		<bean id="car" class="my.Car" scope="http">
-			<aop:scoped-proxy/>						//	当需要将 web 范围的 bean 注入到 singleton 范围的 bean 时才会起作用
-		</bean>
-		<bean id="boss" class="my.Boss" p:car-ref="car"/>	//	得到的 car 是动态生成的代理，boss 在每个 http 请求都有一个 car 对象
+  web.xml 注册 RequestContextListener 监听 http 请求，注册 ContextLoaderListener 监听 web 容器
+	<listener>
+		<listener-class>
+			org.springframework.web.context.request.RequestContextListener
+		</listener-class>
+	</listener>
+	<listener>
+		<listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
+	</listener>
+  beans.xml 中有时需要使用 <aop:scoped-proxy/> 创建代理
+	<bean id="car" class="my.Car" scope="http">
+		<aop:scoped-proxy/>								//	当需要将 web 范围的 bean 注入到 singleton 范围的 bean 时才会起作用
+	</bean>
+	<bean id="boss" class="my.Boss" p:car-ref="car"/>	//	得到的 car 是动态生成的代理，boss 在每个 http 请求都有一个 car 对象
 

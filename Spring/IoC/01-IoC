@@ -20,12 +20,12 @@
 		发布刷新结束事件，注册容器
 		
 * （参考）
-	在 AbstractApplicationContext 中有以下代码，用于容器对象的初始化
+  在 AbstractApplicationContext 中有以下代码，用于容器对象的初始化
   this.invokeBeanFactoryPostProcessors(beanFactory);		//	调用工厂后处理器处理不完全的 BeanDefinition，转化占位符等
-  this.registerBeanPostProcessors(beanFactory);					//	注册后处理器
-  this.initMessageSource();															//	初始化国际化对象容器（使得容器可以使用 getMessage，见下文）
-  this.initApplicationEventMulticaster();								//	初始化事件广播器，一般使用默认的 SimpleApplicationEventMulticaster
-  this.onRefresh();																			//	其他特殊初始化
-  this.registerListeners();															//	注册监听器
+  this.registerBeanPostProcessors(beanFactory);				//	注册后处理器
+  this.initMessageSource();									//	初始化国际化对象容器（使得容器可以使用 getMessage，见下文）
+  this.initApplicationEventMulticaster();					//	初始化事件广播器，一般使用默认的 SimpleApplicationEventMulticaster
+  this.onRefresh();											//	其他特殊初始化
+  this.registerListeners();									//	注册监听器
   this.finishBeanFactoryInitialization(beanFactory);
-  this.finishRefresh();																	//	发布刷新结束事件
+  this.finishRefresh();										//	发布刷新结束事件

@@ -1,51 +1,51 @@
 * mybatis 和 hibernate 的配置文件和 API 几乎一样
-		mybatis-config.xml 					hibernate.cfg.xml 
-		Mapper.xml 									hibernate.hbm.xml
-		SqlSessionFactoryBuilder		Configuration
-		SqlSessionFactory						SessionFactory
-		SqlSession									Session
-	hibernate 针对 domain 层，是全自动映射，开发效率高但难优化，通过 Transaction 控制事务
-	mybatis 针对 dao 层，是半自动映射，且 SqlSession 本身就可以使用事务功能
+	mybatis-config.xml 				hibernate.cfg.xml 
+	Mapper.xml 						hibernate.hbm.xml
+	SqlSessionFactoryBuilder		Configuration
+	SqlSessionFactory				SessionFactory
+	SqlSession						Session
+  hibernate 针对 domain 层，是全自动映射，开发效率高但难优化，通过 Transaction 控制事务
+  mybatis 针对 dao 层，是半自动映射，且 SqlSession 本身就可以使用事务功能
 
 	
 * mybatis-config.xml 解析
 	<?xml version="1.0" encoding="utf-8" ?>
 	<!DOCTYPE configuration  PUBLIC "-//mybatis.org//DTD Config 3.0//EN"	"http://mybatis.org/dtd/mybatis-3-config.dtd">
 	<configuration>
-    <properties resource="db.properties"/>		# 引入外部文件
-    <typeAliases>															# 设置别名
-      <package name="my.domain"/>							#	使用类名小写表示一个类，如 user 等于 my.domain.User 
+    <properties resource="db.properties"/>			# 引入外部文件
+    <typeAliases>									# 设置别名
+      <package name="my.domain"/>					# 使用类名小写表示一个类，如 user 等于 my.domain.User 
     </typeAliases>
-    <environments default="mysql">						#	environments 可以配置多个 environment，但只能使用一个，default 指定使用的环境
-      <environment id="mysql">								# 每个 environment 都有自己的 id（名字）
+    <environments default="mysql">					# environments 可以配置多个 environment，但只能使用一个，default 指定使用的环境
+      <environment id="mysql">						# 每个 environment 都有自己的 id（名字）
         <transactionManager type="jdbc"/>			# type 可以为 jdbc 或 managed（无事务）
-        <dataSource type="pooled">						#	type 可以为 unpooled，pooled 和 jndi，常用 pooled（连接池）
+        <dataSource type="pooled">					# type 可以为 unpooled，pooled 和 jndi，常用 pooled（连接池）
           <property name="driver" value="${driver}"/>
           <property name="url" value="${url}"/>
           <property name="username" value="${name}"/>
         </dataSource>
       </environment>
     </environments>
-    <mappers>																					# mappers 指定所有映射文件的位置
-      <mapper resource="mapper/UserMapper.xml"/>			# xml 文件，最基本的使用
-			<!-- 基于注解的接口类 
-			<mapper class="mapper.UserMapper"/>							
-			<mapper package name="mapper"/>	-->	
+    <mappers>										# mappers 指定所有映射文件的位置
+		<mapper resource="mapper/UserMapper.xml"/>	# xml 文件，最基本的使用
+		<!-- 基于注解的接口类 
+		<mapper class="mapper.UserMapper"/>							
+		<mapper package name="mapper"/>	-->	
     </mappers>
 	</configuration>	
 	
 	
 * mybatis 是半自动映射，不像 hibernate 那样一个持久化类就是一个表，mybatis 中类和表其实是没有关系的
-	* 在 mybatis 中使用 parameterType 指定入参类型，使用 ognl 来绑定入参（使用 _parameter 表示入参，使用 #{} 访问入参内部的属性）
-		如 parameterType="my.domain.User"，使用 #{id} 可以访问 User#id，使用 #{name} 可以访问 User#name
-		使用 select * from tb_user where name = #{name}; 查询 tb_user 表时，parameterType 不一定是 User
-	* 在 mybatis 中使用 resultType 指定返回类型，返回的字段值会自动注入同名的属性中
-		如 resultType="my.domain.User"，select id, name, pwd from tb_user; 会注入到 User 的 id，name 和 pwd 属性中
-		resultType 要求列名与属性名一致，否则相应属性不会被注入，如 User 中没有 pwd，有 password，则 password 为 null
-		有两种方法解决上述问题：
-			一，查询语句改为 select id, name, pwd password from tb_user;
-			二，使用 resultMap
-	* 总结：mybatis 使用 parameterType，resultType 和 resultMap 来完成持久化对象映射	
+  * 在 mybatis 中使用 parameterType 指定入参类型，使用 ognl 来绑定入参（使用 _parameter 表示入参，使用 #{} 访问入参内部的属性）
+	如 parameterType="my.domain.User"，使用 #{id} 可以访问 User#id，使用 #{name} 可以访问 User#name
+	使用 select * from tb_user where name = #{name}; 查询 tb_user 表时，parameterType 不一定是 User
+  * 在 mybatis 中使用 resultType 指定返回类型，返回的字段值会自动注入同名的属性中
+	如 resultType="my.domain.User"，select id, name, pwd from tb_user; 会注入到 User 的 id，name 和 pwd 属性中
+	resultType 要求列名与属性名一致，否则相应属性不会被注入，如 User 中没有 pwd，有 password，则 password 为 null
+	有两种方法解决上述问题：
+		一，查询语句改为 select id, name, pwd password from tb_user;
+		二，使用 resultMap
+  * 总结：mybatis 使用 parameterType，resultType 和 resultMap 来完成持久化对象映射	
 	
 	<?xml version="1.0" encoding="UTF-8" ?>
 	<!DOCTYPE mapper  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"	 "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
@@ -68,18 +68,18 @@
 	
 	
 * mybatis 的使用
-	* mybatis 没有 Spring 的 Resource，所以不能使用 classpath: file: 等前缀，
-		但 mybatis 提供了一个 Resources 工具类，可以将类路径的资源转化为 IO 流
-	* SqlSession 的方法
-		select 			<select>		需要一个 ResultHandler 参数，用于处理复杂结果集
-		selectOne		<select>		如 selectOne("my.dao.UserDao.findByName",user)，字符串格式为 <mapper#namespace>.<select#id>
-		selectList 	<select>
-		insert			<insert>
-		update			<update>
-		delete			<delete>
-		commit
-		rollback
-		close
+  * mybatis 没有 Spring 的 Resource，所以不能使用 classpath: file: 等前缀，
+	但 mybatis 提供了一个 Resources 工具类，可以将类路径的资源转化为 IO 流
+  * SqlSession 的方法
+	select 			<select>		需要一个 ResultHandler 参数，用于处理复杂结果集
+	selectOne		<select>		如 selectOne("my.dao.UserDao.findByName",user)，字符串格式为 <mapper#namespace>.<select#id>
+	selectList 	<select>
+	insert			<insert>
+	update			<update>
+	delete			<delete>
+	commit
+	rollback
+	close
 	
 	InputStream config=Resources.getResourceAsStream("mybatis-config.xml");
 	SqlSessionFactory factory=new SqlSessionFactoryBuilder.build(config);		//	注意 build 不是静态方法，前面有个 new
@@ -93,7 +93,7 @@
 			
 
 * mybatis 注意
-#{}绑定 parameterType（ognl），当输出字符串时会自动在两边加上引号，如 hello 输出为 'hello'
-${}输出字符串时不加修改直接输出，如 hello 输出为 hello，所以不能防止 sql 注入，如
-  select * from tb_user where name= ${name} and password= ${password};					
-  select * from tb_user where name='chen'or 1=1 and password='chen' or 1=1;			< SQL 注入 >
+  #{}绑定 parameterType（ognl），当输出字符串时会自动在两边加上引号，如 hello 输出为 'hello'
+  ${}输出字符串时不加修改直接输出，如 hello 输出为 hello，所以不能防止 sql 注入，如
+	select * from tb_user where name= ${name} and password= ${password};					
+	select * from tb_user where name='chen'or 1=1 and password='chen' or 1=1;			< SQL 注入 >

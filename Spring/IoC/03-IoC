@@ -1,209 +1,204 @@
 * Spring 设计了一个 Resource 接口，提供比 jdk 更强的底层资源访问能力，常用方法如下
-		exists，isOpen，getURL，getFile，getInputStream
-	常用实现类有
-		FileSystemResource			从文件系统上加载文件
-		ClassPathResource				从类路径加载文件
-		ServletContextResource	从 Web 路径加载文件，含有两个参数，第一个参数为 ServletContext，如 
-														Resource resource=new ServletContextResource(application,"/index.jsp");
-		PathResource						Spring 4.0 新增类，可以通过 Url，Path，文件系统路径加载文件，可以代替 FileSystemResource 
-	当使用不同的实现类来加载不同资源不是太灵活，Spring 提供了 ResourceLoader 接口用来统一加载资源，其含有方法 getResource(location)
-	ResourcePatternResolver 接口继承 ResourceLoader，可以使用 ant 通配符，具体实现类为 PathMatchingResourcePatternResolver 
-	资源加载器通过地址的前缀和 ant 通配符来辨识加载资源
-		地址前缀
-			classpath:
-			classpath*:		classpath*:bean*.xml 匹配路径下所有 jar 包里面的所有 bean*.xml 文件，classpath: 只能匹配第一个 jar 包
-			file:
-			http://
-			ftp://
-		ant 通配符
-			？						匹配一个字符
-			*							匹配一个字符串
-			**						匹配多层路径，如 org/**/beans.xml
-		----------------------------------------------------------------------------------------
-				ResourcePatternResolver resolver=new PathMatchingResourcePatternResolver();
-				Resource resource=(Resource)resolver.getResource("classpath:test.xml");
-				InputStream inputStream=resource.getInputStream();
-		----------------------------------------------------------------------------------------
+	exists，isOpen，getURL，getFile，getInputStream
+  常用实现类有
+	FileSystemResource		从文件系统上加载文件
+	ClassPathResource		从类路径加载文件
+	ServletContextResource	从 Web 路径加载文件，含有两个参数，第一个参数为 ServletContext，如 Resource resource=new ServletContextResource(application,"/index.jsp");
+	PathResource			Spring 4.0 新增类，可以通过 Url，Path，文件系统路径加载文件，可以代替 FileSystemResource 
+  当使用不同的实现类来加载不同资源不是太灵活，Spring 提供了 ResourceLoader 接口用来统一加载资源，其含有方法 getResource(location)
+  ResourcePatternResolver 接口继承 ResourceLoader，可以使用 ant 通配符，具体实现类为 PathMatchingResourcePatternResolver 
+  资源加载器通过地址的前缀和 ant 通配符来辨识加载资源
+	地址前缀
+		classpath:
+		classpath*:		classpath*:bean*.xml 匹配路径下所有 jar 包里面的所有 bean*.xml 文件，classpath: 只能匹配第一个 jar 包
+		file:
+		http://
+		ftp://
+	ant 通配符
+		？						匹配一个字符
+		*						匹配一个字符串
+		**						匹配多层路径，如 org/**/beans.xml
+	----------------------------------------------------------------------------------------
+			ResourcePatternResolver resolver=new PathMatchingResourcePatternResolver();
+			Resource resource=(Resource)resolver.getResource("classpath:test.xml");
+			InputStream inputStream=resource.getInputStream();
+	----------------------------------------------------------------------------------------
 	
 	
 	
 * 在 IoC 容器中有一个很重要的概念，后处理器，PostProcessor
-		BeanPostProcessor 										在初始化 bean 时被调用
-		BeanFactoryPostProcessor 							用于修改 BeanDefinition
-		InstantiationAwareBeanPostProcessor		BeanPostProcessor 的子接口
-	* 一般不直接实现 InstantiationAwareBeanPostProcessor 接口，
-		而是继承 InstantiationAwareBeanPostProcessorAdaptor，
-		当 BeanFactory 对象添加多个后处理器时可以通过实现 Ordered 接口定义顺序
+	BeanPostProcessor 						在初始化 bean 时被调用
+	BeanFactoryPostProcessor 				用于修改 BeanDefinition
+	InstantiationAwareBeanPostProcessor		BeanPostProcessor 的子接口
+  * 一般不直接实现 InstantiationAwareBeanPostProcessor 接口，而是继承 InstantiationAwareBeanPostProcessorAdaptor，
+	当 BeanFactory 对象添加多个后处理器时可以通过实现 Ordered 接口定义顺序
 	
 	
 	
 * Spring 框架中有一个很无聊的接口 FactoryBean<>，很容易和 BeanFactory 混淆
-	原理是封装 bean 类，然后就可以按自己想要的配置方法来配置
-	FactoryBean 接口有三个方法，getObject，getObjectType 和 isSingleton（设置是否为单例）
-		public class MyCarBean implements FactoryBean<Car> {
-			String info;
-			public void setInfo(String info) {
-        this.info = info;
-			}
-			public Car getObject() throws Exception {
-        Car car=new Car();
-        String[]str=info.split(" ");
-        car.setBrand(str[0]);
-        car.setSpeed(Integer.parseInt(str[1]));
-        return car;
-			}
-			public Class<?> getObjectType() {
-        return Car.class;
-			}
-			public boolean isSingleton() {
-        return true;
-			}
-		}	
-		beans.xml
-			<bean id="car" class="My.Car" p:brand="大Q吧" p:speed="20"/>
-			<bean id="carBean" class="My.MyCarBean" p:info="宝马 10"/>	
-	当使用 getBean("carBean") 时返回的是 MyCarBean#getObject 的返回值
-	如果要获取 MyCarBean 对象则要使用 getBean("&carBean") 
+  原理是封装 bean 类，然后就可以按自己想要的配置方法来配置
+  FactoryBean 接口有三个方法，getObject，getObjectType 和 isSingleton（设置是否为单例）
+	public class MyCarBean implements FactoryBean<Car> {
+		String info;
+		public void setInfo(String info) {
+			this.info = info;
+		}
+		public Car getObject() throws Exception {
+			Car car=new Car();
+			String[]str=info.split(" ");
+			car.setBrand(str[0]);
+			car.setSpeed(Integer.parseInt(str[1]));
+			return car;
+		}
+		public Class<?> getObjectType() {
+			return Car.class;
+		}
+		public boolean isSingleton() {
+			return true;
+		}
+	}	
+	beans.xml
+	<bean id="car" class="My.Car" p:brand="大Q吧" p:speed="20"/>
+	<bean id="carBean" class="My.MyCarBean" p:info="宝马 10"/>	
+  当使用 getBean("carBean") 时返回的是 MyCarBean#getObject 的返回值
+  如果要获取 MyCarBean 对象则要使用 getBean("&carBean") 
 
 	
 	
 * 引入外部文件需要在 beans.xml 中配置 PropertyPlaceholderConfigure 类
-	* PropertyPlaceholderConfigure 还有其他属性如 placeholderPrefix 和 placeholderSuffix，默认为 ${ 和 }
-	* 在注解中也可以使用，如 @Value("${name}") 
-	* beans.xml 中 ${name} #{user.name} 等占位符会被工厂后处理器转化为真实数值
-	
-	data.properties
-		name=陈树添
-		sex=男
-		age=23
-	
-	beans.xml
-		<bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigure"
-		p:location="classpath:data.properties"
-		p:fileEncoding="utf-8"/>
-		<!--
-			<context:property-placeholder location="classpath:data.properties"/>
-			用来取代上述配置
-			-->
-		<bean id="user" class="my.User" p:name="${name}" p:sex="${sex}" p:age="${age}"/>
+  * PropertyPlaceholderConfigure 还有其他属性如 placeholderPrefix 和 placeholderSuffix，默认为 ${ 和 }
+  * 在注解中也可以使用，如 @Value("${name}") 
+  * beans.xml 中 ${name} #{user.name} 等占位符会被工厂后处理器转化为真实数值
+
+  data.properties
+	name=陈树添
+	sex=男
+	age=23
+
+  beans.xml
+	<bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigure"
+			p:location="classpath:data.properties" p:fileEncoding="utf-8"/>
+	<!-- 用来取代上述配置  
+	  <context:property-placeholder location="classpath:data.properties"/> -->
+	<bean id="user" class="my.User" p:name="${name}" p:sex="${sex}" p:age="${age}"/>
 	
 	
 	
 * 在 beans.xml 中配置了一个 bean 后可以使用 #{beanName.property} 来访问属性
-		<bean id="user" class="my.User" p:name="chen"/>
-		<bean id="boss" class="my.Boss" p:name="#{user.name}"/>
+	<bean id="user" class="my.User" p:name="chen"/>
+	<bean id="boss" class="my.Boss" p:name="#{user.name}"/>
 	
 
 	
 * i18n 国际化
-	* 国际化信息又被称为本地化信息，含有两个属性，语言和地区
-		语言和地区都为两个字母，语言一般为小写，地区为大写
-		语言	zh（汉语），en（英语）
-		地区	CN（大陆），TW（台湾），US（美国），EN（英国）
-	* 比如同一个网页，要根据不同地区的访问返回不同的本地化格式（中文，英文或其他），这种方式通过资源文件来实现
-		资源文件格式为 <资源名>_<语言代码>_<地区代码>.properties，如 resource_en_US.properties
-		当访问不到相应的资源文件时就会逐渐减少条件来访问，如下
-			resource_en_US.properties --> resource_en.properties --> resource.properties
-	! 资源文件对文件内容有严格要求，只能包含 ascii 格式字符串，中文必须使用 unicode 编码格式存放，如 您好！-- \u60a8\u597d\uff01
-			通过 jdk 提供的命令行工具 native2ascii [-encoding 编码] infile outfile 来转化
-			一般的 IDE 都提供了保存时自动转化的插件，只要进行相应的设置就可以了，如 idea 设置 file encoding 的 native-to-ascii 选项
-	* 本地化类，Locale
-			Locale locale1=new Locale("zh","CN");		//	通过语言和地区两个关键词的构造函数
-			Locale locale2=Locale.CHINA;						//	通过 Locale 的枚举变量，最常用
-			Locale locale3=Locale.getDefault();			//	本地系统默认的本地化类
-	* 本地化工具类，NumberFormat，DateFormat，MessageFormat
-		MessageFormat 可以完成前面两种工具类的功能，并且可以使用占位符，所以一般使用这个工具类
-		
-			String model="today is {0,date,short},{1}";							//	占位符格式为 {index[,type,pattern]} 
-			Object[]objs={new Date(),"chen"};
-			String result=MessageFormat.format(model,objs);					//	使用静态方法表示本地系统的国际化对象
-			MessageFormat mf=new MessageFormat(model,Locale.US);		//	给 model 创建一个美国化的格式
-			result=mf.format(objs);																	//	用美国化的格式填充占位符
-			
-	* 多资源加载器，ResourceBundle，通过 getBundle 初始化，使用 getString 获取字段值
-		-- 假设有资源文件 greet.properties , greet_zh_CN.properties , greet_en_US.properties --
-			ResourceBundle bundle=ResourceBundle.getBundle("greet",Locale.US);
-			System.out.println(bundle.getString("afternoon"));
-		资源文件可以包含占位符，然后与 MessageFormat 一起使用
-			Object[]objs={new Date()};
-			String result=new MessageFormat(bundle.getString("morning"),Locale.US).format(objs);
-	* ResourceBundle 对象只加载一个特定资源文件，并且使用占位符时与 MessageFormat 一起使用时很麻烦
-		Spring 提供了一个 MessageSource 接口对上述情况进行了改变，其常用实现类有 ResourceBundleMessageSource 和 Reloadable~
-		ResourceBundleMessageSource 一次性加载所有资源文件，然后使用 getMessage(key,params,locale) 返回需要的国际化信息
-			
-			ResourceBundleMessageSource source=new ResourceBundleMessageSource();
-			source.setBasenames("user");
-			Object[]objs={new Date()};
-			source.getMessage("morning",objs,Locale.US);			good morning 7/31/18 11:32 AM
-			source.getMessage("morning",objs,Locale.CHINA);		你好 18-7-31 上午11:32
-		
-	* ApplicationContext 接口继承了 MessageSource 接口，所以 context 可以使用 getMessage（要求 bean 名为 messageSource）
+  * 国际化信息又被称为本地化信息，含有两个属性，语言和地区
+	语言和地区都为两个字母，语言一般为小写，地区为大写
+	语言	zh（汉语），en（英语）
+	地区	CN（大陆），TW（台湾），US（美国），EN（英国）
+  * 比如同一个网页，要根据不同地区的访问返回不同的本地化格式（中文，英文或其他），这种方式通过资源文件来实现
+	资源文件格式为 <资源名>_<语言代码>_<地区代码>.properties，如 resource_en_US.properties
+	当访问不到相应的资源文件时就会逐渐减少条件来访问，如下
+		resource_en_US.properties --> resource_en.properties --> resource.properties
+  ! 资源文件对文件内容有严格要求，只能包含 ascii 格式字符串，中文必须使用 unicode 编码格式存放，如 您好！-- \u60a8\u597d\uff01
+		通过 jdk 提供的命令行工具 native2ascii [-encoding 编码] infile outfile 来转化
+		一般的 IDE 都提供了保存时自动转化的插件，只要进行相应的设置就可以了，如 idea 设置 file encoding 的 native-to-ascii 选项
+  * 本地化类，Locale
+		Locale locale1=new Locale("zh","CN");		//	通过语言和地区两个关键词的构造函数
+		Locale locale2=Locale.CHINA;				//	通过 Locale 的枚举变量，最常用
+		Locale locale3=Locale.getDefault();			//	本地系统默认的本地化类
+  * 本地化工具类，NumberFormat，DateFormat，MessageFormat
+	MessageFormat 可以完成前面两种工具类的功能，并且可以使用占位符，所以一般使用这个工具类
 	
-		beans.xml
-			<bean id="messageSource" class="org.springframework.context.support.ReloadableResourceBundleMessageSource">
-        <property name="basenames">
-          <list>
-						<value>user</value>
-          </list>
-        </property>
-        <property name="cacheSeconds" value="5"/>	<!--单位为秒-->
-			</bean>
-		class
-			ApplicationContext context=new ClassPathXmlApplicationContext("beans.xml");
-			context.getMessage("morning",objs,Locale.US);
-			/*
-			 *	如果 bean 的名字不是 messageSource，则必须使用以下方法来获取
-			 *	MessageSource source=(MessageSource)context.getBean("messageSource");
-			 * 	source.getMessage("morning",objs,Locale.US);
-			 */
+		String model="today is {0,date,short},{1}";					//	占位符格式为 {index[,type,pattern]} 
+		Object[]objs={new Date(),"chen"};
+		String result=MessageFormat.format(model,objs);				//	使用静态方法表示本地系统的国际化对象
+		MessageFormat mf=new MessageFormat(model,Locale.US);		//	给 model 创建一个美国化的格式
+		result=mf.format(objs);										//	用美国化的格式填充占位符
+		
+  * 多资源加载器，ResourceBundle，通过 getBundle 初始化，使用 getString 获取字段值
+	-- 假设有资源文件 greet.properties , greet_zh_CN.properties , greet_en_US.properties --
+		ResourceBundle bundle=ResourceBundle.getBundle("greet",Locale.US);
+		System.out.println(bundle.getString("afternoon"));
+	资源文件可以包含占位符，然后与 MessageFormat 一起使用
+		Object[]objs={new Date()};
+		String result=new MessageFormat(bundle.getString("morning"),Locale.US).format(objs);
+  * ResourceBundle 对象只加载一个特定资源文件，并且使用占位符时与 MessageFormat 一起使用时很麻烦
+	Spring 提供了一个 MessageSource 接口对上述情况进行了改变，其常用实现类有 ResourceBundleMessageSource 和 Reloadable~
+	ResourceBundleMessageSource 一次性加载所有资源文件，然后使用 getMessage(key,params,locale) 返回需要的国际化信息
+		
+		ResourceBundleMessageSource source=new ResourceBundleMessageSource();
+		source.setBasenames("user");
+		Object[]objs={new Date()};
+		source.getMessage("morning",objs,Locale.US);		good morning 7/31/18 11:32 AM
+		source.getMessage("morning",objs,Locale.CHINA);		你好 18-7-31 上午11:32
+	
+  * ApplicationContext 接口继承了 MessageSource 接口，所以 context 可以使用 getMessage（要求 bean 名为 messageSource）
+
+	----- beans.xml ----- 
+	<bean id="messageSource" class="org.springframework.context.support.ReloadableResourceBundleMessageSource">
+		<property name="basenames">
+			<list>
+				<value>user</value>
+			</list>
+		</property>
+		<property name="cacheSeconds" value="5"/>	<!--单位为秒-->
+	</bean>
+	----- class ----- 
+	ApplicationContext context=new ClassPathXmlApplicationContext("beans.xml");
+	context.getMessage("morning",objs,Locale.US);
+	/*
+	 *	如果 bean 的名字不是 messageSource，则必须使用以下方法来获取
+	 *	MessageSource source=(MessageSource)context.getBean("messageSource");
+	 * 	source.getMessage("morning",objs,Locale.US);
+	 */
 			 
 			 
 			 
 * 容器事件，注意是容器事件，事件源是容器
-	* 在事件体系中有五个专有名词
-			事件源
-			事件
-			事件广播器
-			事件监听器注册表
-			事件监听器
-	* EventObject 是 java 自身提供的一个事件类，所有时间都继承该类，Spring 扩展出了 ApplicationContextEvent
-	* EventListener 是 java 提供的一个事件监听器接口，Spring 扩展出了 ApplicationListener<> 接口
-	* 事件对象中需要包含事件源（ApplicationContext）
-	* 事件广播器包含事件监听器注册表，只要实现 ApplicationEventMulticaster 接口即可，一般使用默认的
-	* 发布事件的类需要实现 ApplicationContextAware（使用容器对象的 publishEvent 方法发布事件）
-	
-	事件（一般通过构造方法构造事件）
-		public class MailSendEvent extends ApplicationContextEvent {
-			private String to;
-			public MailSendEvent(ApplicationContext context, String to){
-        super(context);
-        this.to=to;
-			}
-			//	getter/setter
-		}
+  * 在事件体系中有五个专有名词
+	事件源
+	事件
+	事件广播器
+	事件监听器注册表
 	事件监听器
-		public class MailSendListener implements ApplicationListener<MailSendEvent> {
-			public void onApplicationEvent(MailSendEvent mailEvent) {
-        System.out.println("目的地");
-        System.out.println(mailEvent.getTo());
-			}
+  * EventObject 是 java 自身提供的一个事件类，所有时间都继承该类，Spring 扩展出了 ApplicationContextEvent
+  * EventListener 是 java 提供的一个事件监听器接口，Spring 扩展出了 ApplicationListener<> 接口
+  * 事件对象中需要包含事件源（ApplicationContext）
+  * 事件广播器包含事件监听器注册表，只要实现 ApplicationEventMulticaster 接口即可，一般使用默认的
+  * 发布事件的类需要实现 ApplicationContextAware（使用容器对象的 publishEvent 方法发布事件）
+
+  事件（一般通过构造方法构造事件）
+	public class MailSendEvent extends ApplicationContextEvent {
+		private String to;
+		public MailSendEvent(ApplicationContext context, String to){
+	super(context);
+	this.to=to;
 		}
-	含有容器的事件源
-		public class MailSender implements ApplicationContextAware {
-			private ApplicationContext context;
-			public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-        context=applicationContext;
-			}
-			public void sendMail(String to){
-        MailSendEvent event=new MailSendEvent(context,to);
-        context.publishEvent(event);							//	使用容器对象发布事件
-			}
+		//	getter/setter
+	}
+  事件监听器
+	public class MailSendListener implements ApplicationListener<MailSendEvent> {
+		public void onApplicationEvent(MailSendEvent mailEvent) {
+	System.out.println("目的地");
+	System.out.println(mailEvent.getTo());
 		}
-	配置文件
-		<bean id="sender" class="My.MailSender" />		//	实现 ApplicationContextAware 中方法的注入
-    <bean class="My.MailSendListener"/>						//	注册监听器
-	使用
-		MailSender sender=(MailSender)context.getBean("sender");
-    sender.sendMail("广州");
-	* MailSender 不是事件源，事件源是其内部的容器对象
-	* 在 Spring 中容器就包含广播器和监听器注册表
+	}
+  含有容器的事件源
+	public class MailSender implements ApplicationContextAware {
+		private ApplicationContext context;
+		public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+	context=applicationContext;
+		}
+		public void sendMail(String to){
+	MailSendEvent event=new MailSendEvent(context,to);
+	context.publishEvent(event);					//	使用容器对象发布事件
+		}
+	}
+  配置文件
+	<bean id="sender" class="My.MailSender" />		//	实现 ApplicationContextAware 中方法的注入
+	<bean class="My.MailSendListener"/>				//	注册监听器
+  使用
+	MailSender sender=(MailSender)context.getBean("sender");
+	sender.sendMail("广州");
+  * MailSender 不是事件源，事件源是其内部的容器对象
+  * 在 Spring 中容器就包含广播器和监听器注册表

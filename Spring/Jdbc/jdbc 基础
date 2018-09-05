@@ -3,42 +3,41 @@
 	运行时异常，检查型异常的相反，如 IllegalArgumentException
 	
 * JDK 自带的 jdbc 异常体系，不管出现什么类型的错误（连接失败，插入失败）都只会产生 SQLException，然后通过其错误码来判断错误类型
-	过于底层，难以查找出问题，并且多是检查型异常，需要使用到太多 try-catch
-	Spring 为此建造了一套完整的异常体系，以 DataAccessException 为顶层，通过 SQLException 的错误码扩展出其他异常（都为运行时异常）
+  过于底层，难以查找出问题，并且多是检查型异常，需要使用到太多 try-catch
+  Spring 为此建造了一套完整的异常体系，以 DataAccessException 为顶层，通过 SQLException 的错误码扩展出其他异常（都为运行时异常）
 	
 * 每一种数据库框架都有自己的异常体系，Spring 为这些框架提供了相应的异常转化工具，如 hibernate 的 SessionFactoryUtiles
-	即，当整合 Spring 和 Hibernate 时，使用的数据库异常体系是 Spring 而不是 Hibernate 的
+  即，当整合 Spring 和 Hibernate 时，使用的数据库异常体系是 Spring 而不是 Hibernate 的
 	
 * 当操作数据库数据时，即使只是简单的搜索，仍然需要建立连接，提交事务，关闭连接等操作
-	Spring 提供了模板与回调机制来处理这种问题，使用模板来封装上述非业务代码，使用回调来处理业务代码（DML），符合 AOP 的设计理念
-	Spring 为每一种数据库框架提供了相应的模板类，如 JdbcTemplate，HibernateTemplate 等
+  Spring 提供了模板与回调机制来处理这种问题，使用模板来封装上述非业务代码，使用回调来处理业务代码（DML），符合 AOP 的设计理念
+  Spring 为每一种数据库框架提供了相应的模板类，如 JdbcTemplate，HibernateTemplate 等
 	
 
 * DAO 对象使用模板类时需要使用 @Autowired private JdbcTemplate template; 来声明模板
-	Spring 为此提供了进一步的支持，其为每一个数据库框架提供了相应的 DaoSupport，如 JdbcDaoSupport
-	每一个 DaoSupport 中都封装着相应的 Template，容器初始化时会自动注入模板对象，使用 getter 获取
+  Spring 为此提供了进一步的支持，其为每一个数据库框架提供了相应的 DaoSupport，如 JdbcDaoSupport
+  每一个 DaoSupport 中都封装着相应的 Template，容器初始化时会自动注入模板对象，使用 getter 获取
 	
 * 配置数据源
-	DBCP 的 BasicDataSource
-	C3P0 的 ComboPooledDataSource
-	JNDI （不需要配置数据源，直接使用高级的应用服务器提供的数据库服务）
-	Spring 自带的 DriverManagerDataSource，是对 DataSource 接口的简单实现，没有连接池的功能，多用于测试
-	* DBCP 有连接池的功能，需要使用 Apache 的 commons-dbcp 和 commons-pool 两个包
-			<bean id="dataSource" 
-						class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close"
-						p:driverClassName="com.mysql.jdbc.Driver"
-						p:url="jdbc:mysql:///mybatis？characterEncoding=utf-8"
-						p:username="root"	p:password="root"
-						p:initialSize="0"	p:maxActive="8"	p:maxIdle="8"	p:minIdle="0" />
-			配置数据源标准需要设置 destroy-method 为 close
-			最后一行为数据源的连接池配置（可选，上述参数为默认配置）
-	* 访问 MySql 数据库，如果应用的数据源配置不当会发生经典的 8 小时问题，即
-		MySql 的连接最大空闲时间默认为 8 小时，如果应用中连接池的某个连接空闲超过 8 小时（在 MySql 中已失效），
-		但连接池不知道其失效了，所以不会清除它，当使用时返回该连接给 DAO 对象就会引发连接异常
-		------ 方法一 ------
-		在 DBCP 数据源中有一个 validationQuery 属性，值为 sql 命令，用来测试连接，如 select 1
-		默认情况下 testOnBorrow 为 true，即使用连接之前会使用 validationQuery 来检验是否失效，如果失效则借用其他连接
-		但在高并发访问时会增加数据库的负担
-		------ 方法二 ------
-		将 testOnBorrow 关闭，打开 testWhileIdle，并设置 timeBetweenEvictionRunsMills 的值小于 8 小时（毫秒，默认为 -1，关闭）
-		这两个参数一样依赖于 validationQuery（回收器每隔一段时间运行，清除失效的空闲连接）
+  DBCP 的 BasicDataSource
+  C3P0 的 ComboPooledDataSource
+  JNDI （不需要配置数据源，直接使用高级的应用服务器提供的数据库服务）
+  Spring 自带的 DriverManagerDataSource，是对 DataSource 接口的简单实现，没有连接池的功能，多用于测试
+  * DBCP 有连接池的功能，需要使用 Apache 的 commons-dbcp 和 commons-pool 两个包
+	<bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close"
+			p:driverClassName="com.mysql.jdbc.Driver"
+			p:url="jdbc:mysql:///mybatis？characterEncoding=utf-8"
+			p:username="root"	p:password="root"
+			p:initialSize="0"	p:maxActive="8"	p:maxIdle="8"	p:minIdle="0" />
+	配置数据源标准需要设置 destroy-method 为 close
+	最后一行为数据源的连接池配置（可选，上述参数为默认配置）
+* 访问 MySql 数据库，如果应用的数据源配置不当会发生经典的 8 小时问题，即
+  MySql 的连接最大空闲时间默认为 8 小时，如果应用中连接池的某个连接空闲超过 8 小时（在 MySql 中已失效），
+  但连接池不知道其失效了，所以不会清除它，当使用时返回该连接给 DAO 对象就会引发连接异常
+  ------ 方法一 ------ 
+  在 DBCP 数据源中有一个 validationQuery 属性，值为 sql 命令，用来测试连接，如 select 1
+  默认情况下 testOnBorrow 为 true，即使用连接之前会使用 validationQuery 来检验是否失效，如果失效则借用其他连接
+  但在高并发访问时会增加数据库的负担
+  ------ 方法二 ------
+  将 testOnBorrow 关闭，打开 testWhileIdle，并设置 timeBetweenEvictionRunsMills 的值小于 8 小时（毫秒，默认为 -1，关闭）
+  这两个参数一样依赖于 validationQuery（回收器每隔一段时间运行，清除失效的空闲连接）

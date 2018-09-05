@@ -1,113 +1,113 @@
 * Spring 在底层提供了很多强大的工具类（工具类及其辅助类一般都是 abstract 型，其内部所有方法都为 static）
-	如 DataSourceUtils，SessionFactoryUtils 等，它们有两种功能
-		1，将其他框架的异常体系转化为 Spring 的 DataAccessException 异常体系（很简单的小技巧）
-		2，事务状态下同步资源的管理，通过 TransactionSynchronizationManager 中的 ThreadLocal 变量
+  如 DataSourceUtils，SessionFactoryUtils 等，它们有两种功能
+	1，将其他框架的异常体系转化为 Spring 的 DataAccessException 异常体系（很简单的小技巧）
+	2，事务状态下同步资源的管理，通过 TransactionSynchronizationManager 中的 ThreadLocal 变量
 	
 * 工具类讲解（以 DataSourceUtils 为例）
-	* 常用方法
-		* doGetConnection
-			1.事务状态？使用事务同步管理器获取 ConnectionHolder
-			2.使用 getDataSource().getConnection() 创建一个新连接
-			3.事务状态？使用事务同步管理器注册 ConnectionHolder
-		* doReleaseConnection 
-			事务状态？释放连接：关闭连接
-	* 只有事务状态下才会启动事务同步管理器
-	* 在事务状态下 Connection 通过 ConnectionHolder 来管理
-	* 模板类是通过工具类来操作 connection，但不管是否处于事务状态下，都不会发生数据连接泄露的隐患，
-		因为其每一个方法都包含了 connection 的开启与关闭/释放
+  * 常用方法
+	* doGetConnection
+		1.事务状态？使用事务同步管理器获取 ConnectionHolder
+		2.使用 getDataSource().getConnection() 创建一个新连接
+		3.事务状态？使用事务同步管理器注册 ConnectionHolder
+	* doReleaseConnection 
+		事务状态？释放连接：关闭连接
+  * 只有事务状态下才会启动事务同步管理器
+  * 在事务状态下 Connection 通过 ConnectionHolder 来管理
+  * 模板类是通过工具类来操作 connection，但不管是否处于事务状态下，都不会发生数据连接泄露的隐患，
+	因为其每一个方法都包含了 connection 的开启与关闭/释放
 	（数据连接泄露：创建 connection 后没有 close，当大量连接使用后没有释放会造成数据库崩溃）
 	（释放：指事务状态下 ConnectionHolder#referenceCounter--，相当于操作系统的信号量，只是状态改变而已）
-	* 推荐看以下类的源代码
-		DataSourceUtils
-		TransactionSynchronizationManager		绑定的资源不是 Connection，而是 ConnectionHolder
-		ConnectionHolder										绑定 Connection，用来管理连接
-		JdbcTemplate
-		DataSourceTransactionManager
+  * 推荐看以下类的源代码
+	DataSourceUtils
+	TransactionSynchronizationManager		绑定的资源不是 Connection，而是 ConnectionHolder
+	ConnectionHolder						绑定 Connection，用来管理连接
+	JdbcTemplate
+	DataSourceTransactionManager
 	
 * Spring 为不同数据库框架提供了支持的事务管理器实现类
 	JDBC/MyBatis	DataSourceTransactionManager
 	Hibernate			LocalSessionFactoryBean 和 HibernateTransactionManager
 	
 * 三个重要的 Spring 事务管理 SPI（service provide interface）
-	* TransactionDefinition
-			实现类有 DefaultTransactionDefinition 和 DefaultTransactionAttribute
-			用于定义事务属性：事务隔离，事务传播，事务超时，只读状态
-	* PlatformTransactionManager
-			实现类有上述的 DataSourceTransactionManager 等
-			通过 TransactionDefinition 对象创建事务，并为事务创建一个 TransactionStatus 对象
-			注意，事务管理器和事务同步管理器不一样，后者在事务状态下运行，用来管理事务状态下的数据库同步资源
-	* TransactionStatus
-			继承了 SavepointManager 接口，用于记录事务的状态，如是否是新事务，是否含有保存点等
+  * TransactionDefinition
+	实现类有 DefaultTransactionDefinition 和 DefaultTransactionAttribute
+	用于定义事务属性：事务隔离，事务传播，事务超时，只读状态
+  * PlatformTransactionManager
+	实现类有上述的 DataSourceTransactionManager 等
+	通过 TransactionDefinition 对象创建事务，并为事务创建一个 TransactionStatus 对象
+	注意，事务管理器和事务同步管理器不一样，后者在事务状态下运行，用来管理事务状态下的数据库同步资源
+  * TransactionStatus
+	继承了 SavepointManager 接口，用于记录事务的状态，如是否是新事务，是否含有保存点等
 			
 * 事务隔离，即脏读，非脏读，可重复读，序列化读（不并发），Spring 的事务隔离多了一个 default（使用数据库设置的隔离级别）
-	事务传播，规定是否支持事务，是否支持嵌套事务和创建事务时的行为，默认为 required（没有事务则创建，有则加入，融合成一个事务）
-		当 propagation 为 required 时，有三个方法 a，b，c，都为事务，a 方法包含 b，b 中包含 c，则 abc 为一个事务（注意不是嵌套事务）
+  事务传播，规定是否支持事务，是否支持嵌套事务和创建事务时的行为，默认为 required（没有事务则创建，有则加入，融合成一个事务）
+  当 propagation 为 required 时，有三个方法 a，b，c，都为事务，a 方法包含 b，b 中包含 c，则 abc 为一个事务（注意不是嵌套事务）
 	
 * Spring 支持编程式事务管理和声明式事务管理
-	* 编程式（了解即可）
-		Spring 提供了一个 TransactionTemplate，通过 execute 方法执行一个 TransactionCallback 对象
-		TransactionCallback 是一个接口，其含有一个 doInTransaction（TransactionStatus status） 方法
-			template.execute(new TransactionCallback(
-				protected void doInTransaction(TransactionStatus status){
-					userDao.insert(user);
-				}
-			));
-	* 声明式
-		* 代理类（cglib 代理）
-			<bean id="userService" class="org.springframework.transaction.interceptor.TransactionProxyFactoryBean"
-						p:transactionManager-ref="transactionManager"
-						p:target-ref="userServiceTarget"
-				<property name="transactionAttributes">
-					<props>
-						<prop key="get*">PROPAGATION_REQUIRED,readonly,-IO,+IllegalArgumentException</prop>
-						<prop key="*">PROPAGATION_REQUIRED</prop>
-					</props>
-				</property>
-			</bean>
-			需要设置三个属性：事务管理器，目标类，事务属性（TransactionDefinition）
-			事务属性的 key 为方法名，value 为 "事务传播(必填),事务隔离,只读状态,回滚异常,不回滚异常"
-			（Spring 的事务管理默认为：运行时异常全部回滚，检查型异常不作为
-				回滚异常，以 - 开头，如 -IO 则如果执行时碰到 IOException 则回滚（IOException 是检查型异常）
-				非回滚异常，以 + 开头，如 +IllegalArgumentException 则碰到该异常也提交（IllegalArgumentException 为运行时异常）
-			 ）
-		
-		* aop/tx 
-			<aop:config>
-        <aop:pointcut id="myPointcut" expression="execution(* service.UserService.*(..)"/>
-        <aop:advisor advice-ref="txAdvice" pointcut-ref="myPointcut"/>
-			</aop:config>
-			<tx:advice id="txAdvice" transaction-manager="transactionManager">
-        <tx:attributes>
-            <tx:method name="get*" read-only="true" rollback-for="IO" no-rollback-for="Illegal"/>
-            <tx:method name="*"/>
-        </tx:attributes>
-			</tx:advice>
-			事务属性的设置和代理类方式类似，不过可以不设置事务传播（默认就已经是 required）
-		
-		* @Transactional
-			该注解含有以下属性（用于设置事务属性）
-				propagation
-				isolation
-				readOnly
-				timeout
-				rollbackFor
-				noRollbackFor
-			使用该注解需要配置 <tx:annotation-driven transaction-manager="transactionManager"/> 
-			（如果事务管理器的名字为 transactionManager 的话，可以简写为 <tx:annotation-driven/> ）
-			@Transactional(readOnly=true,rollbackFor={IOException.class})
-			public void insert(User user){userDao.insert(user);}
+  * 编程式（了解即可）
+	Spring 提供了一个 TransactionTemplate，通过 execute 方法执行一个 TransactionCallback 对象
+	TransactionCallback 是一个接口，其含有一个 doInTransaction（TransactionStatus status） 方法
+		template.execute(new TransactionCallback(
+			protected void doInTransaction(TransactionStatus status){
+				userDao.insert(user);
+			}
+		));
+  * 声明式
+	* 代理类（cglib 代理）
+	<bean id="userService" class="org.springframework.transaction.interceptor.TransactionProxyFactoryBean"
+				p:transactionManager-ref="transactionManager"
+				p:target-ref="userServiceTarget"
+		<property name="transactionAttributes">
+			<props>
+				<prop key="get*">PROPAGATION_REQUIRED,readonly,-IO,+IllegalArgumentException</prop>
+				<prop key="*">PROPAGATION_REQUIRED</prop>
+			</props>
+		</property>
+	</bean>
+	需要设置三个属性：事务管理器，目标类，事务属性（TransactionDefinition）
+	事务属性的 key 为方法名，value 为 "事务传播(必填),事务隔离,只读状态,回滚异常,不回滚异常"
+	（Spring 的事务管理默认为：运行时异常全部回滚，检查型异常不作为
+		回滚异常，以 - 开头，如 -IO 则如果执行时碰到 IOException 则回滚（IOException 是检查型异常）
+		非回滚异常，以 + 开头，如 +IllegalArgumentException 则碰到该异常也提交（IllegalArgumentException 为运行时异常）
+	 ）
+	
+	* aop/tx 
+	<aop:config>
+		<aop:pointcut id="myPointcut" expression="execution(* service.UserService.*(..)"/>
+		<aop:advisor advice-ref="txAdvice" pointcut-ref="myPointcut"/>
+	</aop:config>
+	<tx:advice id="txAdvice" transaction-manager="transactionManager">
+		<tx:attributes>
+			<tx:method name="get*" read-only="true" rollback-for="IO" no-rollback-for="Illegal"/>
+			<tx:method name="*"/>
+		</tx:attributes>
+	</tx:advice>
+	事务属性的设置和代理类方式类似，不过可以不设置事务传播（默认就已经是 required）
+	
+	* @Transactional
+	  该注解含有以下属性（用于设置事务属性）
+		propagation
+		isolation
+		readOnly
+		timeout
+		rollbackFor
+		noRollbackFor
+	  使用该注解需要配置 <tx:annotation-driven transaction-manager="transactionManager"/> 
+	  （如果事务管理器的名字为 transactionManager 的话，可以简写为 <tx:annotation-driven/> ）
+	  @Transactional(readOnly=true,rollbackFor={IOException.class})
+	  public void insert(User user){userDao.insert(user);}
 			
 * 声明式事务是通过 AOP 来实现的，而 AOP 是通过 jdk 动态代理或 cglib 代理来实现的，尽量用 public 来修饰方法
-		jdk 代理要求方法必须是 public 或 public final，其他如 private 等都无法被增强
-		cglib 代理则要求方法必须是 public 或 protect（因为可以被子类继承）
+	jdk 代理要求方法必须是 public 或 public final，其他如 private 等都无法被增强
+	cglib 代理则要求方法必须是 public 或 protect（因为可以被子类继承）
 * 关于 AOP 还有一个需要注意的是：
-	* 如果有两个方法 a 和 b，这两个方法都被 AOP 增强了，但如果 a 方法中使用了 b，这种情况 b 不会被增强
-	* 事务是使用 AOP 来实现的，但可以通过修改事务传播属性来避免这种情况
-		默认情况下 propagation 值为 required（在大多数情况下是最优选择）
-		如果 a 和 b 都是事务，a 方法中使用了 b 的话，是算一个事务
-			@Transactional
-			public void a(){User user=b();userDao.insert(user);}	//	a 中包含 b，这是一个事务，而不是嵌套事务
-			@Transactional
-			public User b(int id){return userDao.select(id);}
-	* 事务管理器在事务开始之前先 connection#setAutoCommit(false)
-		在结束之后使用 connection#commit||close
+  * 如果有两个方法 a 和 b，这两个方法都被 AOP 增强了，但如果 a 方法中使用了 b，这种情况 b 不会被增强
+  * 事务是使用 AOP 来实现的，但可以通过修改事务传播属性来避免这种情况
+	默认情况下 propagation 值为 required（在大多数情况下是最优选择）
+	如果 a 和 b 都是事务，a 方法中使用了 b 的话，是算一个事务
+		@Transactional
+		public void a(){User user=b();userDao.insert(user);}	//	a 中包含 b，这是一个事务，而不是嵌套事务
+		@Transactional
+		public User b(int id){return userDao.select(id);}
+  * 事务管理器在事务开始之前先 connection#setAutoCommit(false)
+	在结束之后使用 connection#commit||close
