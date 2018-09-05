@@ -1,0 +1,57 @@
+× log4j，apache 提供的一种跨平台，跨语言的日志组件，即自己写的程序执行日记
+× log4j 有三个核心对象
+	logger		日志的主体，在所有日志的最顶层有一个 rootLogger
+	appender	日志的输出方式（一般是控制台和文件，以文件为输出方式时要定义文件路径，最大值和最大数量）
+	layout		日志的输出格式（一般是 html 和 自定义 pattern ，后者如果没有给出自定义的格式，则使用默认模式）
+	× logger 以 appender 为基础，appender 以 layout 为基础
+	× log4j 在 log4j.properties 中声明，在代码中使用
+	×　log4j 的声明格式为 log4j.type.variable.attribute（在 properties 文件中的格式）
+	× log4j 的实现类以 org.apache.log4j 开头
+	
+× appender
+  appender 接口有多个实现类，通过不同的实现类可以实现不同输出方式，常用控制台和文件的实现类（ConsoleAppender 和 RollingFileAppender）
+	log4j.appender.console=org.apache.log4j.ConsoleAppender		× 输出到控制台
+	--------------------------------------------------------------------------
+	log4j.appender.file=org.apache.log4j.RollingFileAddender	×　输出到文件（）
+	log4j.appender.file.File=/home/wanna/log.htm				× File 指定文件位置
+	log4j.appender.file.MaxFileSize=10KB						× MaxFileSize 指定文件最大值
+	log4j.appender.file.MaxBackupIndex=3						× MaxBackupIndex 指定文件最大数量
+	× console 和 file 只是单纯的变量名
+	× RollingFileAppender 类特征是当文件大小超过最大值会被归档，然后生成一个新的文件，文件数量不能超过最大值
+	
+× layout
+  layout 是对 appender 的补充
+  layout 接口也有多个实现类，最常用的是 HTMLLayout 和 PatternLayout，一般前者用于文件，后者用于控制台
+  × PatternLayout 类可以通过 ConversionPattern 子类指定格式，常用如下
+  		%t	线程名称	
+  		%p	大写格式的日志级别
+  		%m	日志信息
+  		%n  换行符
+  示例	log4j.appender.console.layout=org.apache.log4j.PatternLayout
+  		log4j.appender.console.layout.ConversionPattern=%t %p-%m%n
+  		-----------------------------------------------------------
+  		log4j.appender.file.layout=org.apache.HTMLLayout 
+  		
+× logger 
+  logger 访问
+	访问 rootLogger 使用 Logger.getRootLogger() 
+	访问普通 logger 使用 logger.getLogger(name) 
+  定义 logger 需要两个值，日志级别和输出方式，之间用逗号隔开，如 log4j.rootLogger=WARN,console
+	日志级别，debug，info，warn，error，fatal，
+	按照顺序，一级比一级低，只有大过日志对象的日志级别的信息才能被显示
+	（即 logger 设置的日志级别是下限）
+  logger 会继承他的直接父类所有的属性（日志级别只能有一个，级别低的会覆盖高的）
+	log4j.rootLogger=WARN,console				rootLogger 级别为 warn，输出方式为 console
+	log4j.logger.onelogger=debug,file			onelogger 级别为 debug（比控制台级别低，将其覆盖），输出方式为 file 和 console（继承自 rootLogger）
+	log4j.logger.onelogger.newlogger=,file		newlogger 的直接父类是 onelogger，级别为 debug（直接继承 onelogger），输出方式为 file 和 console
+  logger 可以使用级别名的方法来输出相应级别的日志信息
+	<%@page import="org.apache.log4j.*"%>
+  	<% 
+  		Logger one=Logger.getLogger("onelogger");
+  		one.debug("hello");
+  		one.info("hello");
+  		...
+  	%> 
+  log4j.properties 文件放在 classes 文件夹下
+
+× log4j 已经升级到 log4j2 ，不再使用 log4j.properties，而是改用 log4j2.xml，上述所载都是 properties 的格式

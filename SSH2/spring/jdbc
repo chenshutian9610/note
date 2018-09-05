@@ -1,0 +1,25 @@
+× Spring 在数据库开发中的应用主要使用是 JdbcTemplate 类
+	JdbcTemplate 继承自 JdbcAccessor 抽象类（配置数据源和实现异常的转译），实现了 JdbcOperations 接口（数据的增删查改）
+	使用 JdbcTemplate 需要在 xml 文件中配置数据源
+		<bean id="dataSource" class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+			<property name="driverClassName" value="com.mysql.jdbc.Driver"/>
+			<property name="url" value="jdbc:mysql///userdb"/>
+			<property name="username" value="root"/>
+			<property name="password" value="root"/>
+		</bean>
+		<bean id="template" class="org.springframework.jdbc.core.JdbcTemplate">
+			<property name="dataSource" ref="dataSource"/>
+		</bean>
+
+× JdbcTemplate 方法
+	execute 		可以实现任何 sql 语言，但无返回
+	update			可以实现 DML ，返回受影响的行数，并且可以像 PreparedStatement 一样使用通配符，然后通过 Object 数组为其赋值
+					update("insert into login values("user","pwd"))
+					update("insert into login values(?,?),new Object[]{"user","pwd"})
+	query			和 update 一样可以使用通配符，需要一个 RowMapper 类型的参数
+					RowMapper<T> 是一个接口，一般使用其实现类 BeanPropertyRowMapper<T>，以类对象作为参数（.class)  
+					query("select*from login where username=?",
+							new Object[]{"root"},
+							new BeanPropertyRowMapper<User>(User.class))
+					× query 返回 List<T> 型参数，上述例子需要表的列名和对象的属性名一致，不然会返回 null
+	queryForObject	与 query 使用方式一样，返回一个 Object 对象

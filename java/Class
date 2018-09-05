@@ -1,0 +1,8 @@
+× Class 动态创建实例，多用于工厂模式，有利于解耦
+	Class dynamic=Class.forName("Beans.User");	动态加载类，返回类对象
+	User user=(User)dynamic.newInstance			创建实例，返回 Object 对象，需要强制转换
+  × 上述方式与 User user=new User(); 效果一样
+  × 只是单纯的加载类是不会被 JVM 运行的，必须要有 newInstance 方法
+  × 如果被加载的类含有静态构造器，加载的时候该构造器的代码会被执行，比如驱动类，
+  	所以驱动类通常只是 Class.forName("xx.xx"); 而不用 newInstance 方法
+

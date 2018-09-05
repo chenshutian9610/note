@@ -1,0 +1,114 @@
+× VCS，version control system，版本控制系统，常见的有 git（2005），svn（2001）
+
+× git 特点
+	大规模的分布式开发
+	强化责任，谁在什么时候因为什么原因改了数据都会被记载，所以提交数据时要提供用户名，邮箱和信息
+	不可变性，每一次提交会产生一个版本，版本互相独立且不可修改
+	完整的版本库与历史修订信息
+	原子性（事务），提交不成功则回滚
+
+× git 命令
+	在命令行中直接输入 git 命令，会给出常用的 git 命令（输入 git help -a 可以查看所有命令）
+	git 的长命令和短命令 : 长命令需要使用两个 - ，短命令只要一个 ; 长命令赋值时需要 = ，短命令用空格隔开
+		--all						-a
+		--message="hello world"		-m "hello world"
+	git 常用命令
+		git init																在一个文件夹中使用，将当前文件夹变成版本仓库，会生成一个 .git 目录
+		git add [.|file_name]													将当前文件夹中所有或指定文件添加进版本仓库中
+		git status																显示仓库状态（是否含有待提交的数据）
+		git commit -m "initial version" --author="wanna<1406448399@qq.com>"		提交时需要信息，用户名和邮箱，缺一不可
+		git log																	从新到旧排序列出所有版本，每个版本含有一个唯一的十六进制 id
+		git config																配置 git 中的环境变量，如 git config user.name "wanna"
+		git show																后接版本 id ，显示某一版本的具体信息，直接使用则显示最新的版本
+		git show-branch	--more=10												显示最近 n 个版本的标志信息，不接 more 则显示最近一个 											
+		git diff id_1 id_2														比较两个版本的修改
+		git clone ${old} ${new} 												将 git 仓库复制一份到指定文件夹中
+	× 还有其他如 mv ，rm 等命令，与 Linux 一样
+	git 配置
+	× 可以在三个地方修改 git 的配置，分别是
+		.git/config			git config
+		~/gitconfig			git config --global
+		/etc/gitconfig		git config --system
+	× .git/config 的优先级最高，覆盖前面的设置
+	× git config 命令
+		删除某一个配置，加上--unset
+		常用来配置 user.name , user.email , core.editor 
+		可用来给字符串配置别名 alias
+			git config alias.hello 'diff 4646543df5465 46dfe5456dfd13'
+			git hello 就相当于后面那条比较的命令
+		× 注意是给字符串配置别名，而不是给对象
+	× 修改默认编辑器也可以通过配置环境变量 GIT_EDITOR
+
+--------------------------- git 基本概念	-----------------
+× git 版本仓库实质上就是一个数据库，维护着两个重要的数据结构，对象库与索引（虚树）
+	对象库的对象可分为四种
+		blob	二进制大数据文件，存储着数据的内容
+		tree	目录树，存储着 blob 与文件之间的映射，从索引变化而来
+		commit	提交对象，提交一次更改时产生，储存着 tree-id 和执行提交操作的 name，email，message
+		tag		指向 commit 的 id，tag 没法指向引用，如果使用 git tag a HEAD，指向的是 HEAD 指向的 commit 而不是 HEAD
+	对象库中的对象全部存放在 .git/objects 目录下，此目录即对象库
+	git 存储的核心是基于内容的，存放在对象库中的对象的 id 是通过其本身的内容使用 SHA-1 散列算法得出，为 160 位的二进制数值，被转化为 40 位的十六进制字符串，git 对对象进行存储时把 id 的前 2 位做为目录名，后 38 位为文件名（即对象库中只能含有最多 256 个存储对象的目录）
+	× id 为 0afb8c2d4ac4ed46b3bbad4ec844100998a2bbc3 的对象的路径为 .git/objects/0a/fb8c2d4ac4ed46b3bbad4ec844100998a2bbc3
+	底层 git 命令
+		git cat-file 		后接 id 或 id 的前缀，-t 获取对象类型，-p 获取对象内容（print）
+		git ls-files -s		获取索引信息
+		git rev-parse		后接一个 id 的前缀，最少四位，用来获取完整的 id 名
+	对象库中四种对象类型的关系如下
+		tag 只能指向一个 commit
+		commit 指向上一个 commit，包含一个 tree
+		tree 包含多个 blob 和其他 tree 
+	tag 对象分为两种，lightweight 和 annotated，前者只是对提交对象单纯的引用，逻辑上不被永久存储，后者可以包含一条信息，为永久存储的对象
+		git tag -m "hello world" tag_one 06140447a773b3c9ee23b227fe27a0100f211ccb 	id 为提交对象，tag_one 为标签名
+		git rev-parse tag_one														查看标签对象的 id
+		git cat-file -p tag_one														查看标签的内容，包含提交对象和自定义的信息
+		
+
+--------------------------- 索引（虚树）	-----------------		
+× 在工作目录下的文件在 git 中可被分为三种
+  被追踪		被更新到索引中的文件
+  没被追踪	没在索引列表中的文件
+  被忽略		其变化不会被检测到，一般通过配置 .gitignore 或 .git/info/exclude 文件，前者优先级大于后者
+  × .gitignore 配置
+  	.gitignore 由用户自己创建，只是一个单纯的文本文件，支持 #（注释），*（通配符），！（指定例外，和通配符一起使用）
+  	只要把文件名写进去，在工作目录下任何位置只要被匹配到就会被忽略（前提是那些文件没有被 commit 过）
+  		touch nihao
+  		touch nimen
+  		echo ni* > .gitignore		//	使用 git status 可以看到 nihao 和 nimen 两个文件都被忽略
+  		echo !nihao >> .gitignore	//	使用 git status 可以看到 nihao 出现在 untracked-file 列表中
+  	exclude 的使用与 .gitignore 一样，但有个很重要的区别，.gitignore 和普通文件一样会被保存到对象库中，所以克隆的时候会被一起克隆，而 exclude 不会
+  × 当工作目录下的某一文件被操作，就会出现在 untracked-file 列表中，需要使用 add 将其添加到 tracked-file 列表中（更新索引）
+	add 的本质是更新索引，首先将文件计算出 id 并保存为 blob 对象，然后将其映射更新到索引列表中，如果存在文件同名则替换
+	索引列表最开始永远保存着最新版本的所有文件的映射，而 git 中所有的操作指令包括 commit，rm 都是以索引为基础的，而不是文件
+		touch main					创建一个 main 文件（空文件）
+		git add main				将 main 更新到索引中（空文件）
+		echo "hello" > main			添加 hello 字符串到 main 文件中
+		git commit -m "save main"	提交 main 文件（空文件）
+		× 为 main 添加字符串之后没有使用 add 将其更新到索引中，所以它被当做 untracked-file，commit 保存的是索引中的 main 版本
+		× 使用 git add . 可以将所有 untracked-file 变成 tracked-file
+  × commit 有两种模式，不带文件名则提交索引中的版本，显式使用文件名则会将文件先 add 然后再执行 commit，如
+  		git commit -m "save main"			保存索引中的版本
+  		git commit -m "save main" main		相当于先 git add main 再 commit，提交的是一个带有 hello 内容的 mian
+		× 在 git 中，commit，rm 等操作都是以索引为基础的，不能操作 untracked-file，第二种 commit 可以操作 untracked-file 是因为它在底层先使用了 add 
+		× commit 的 -a 选项可以保存所有追踪文件
+× 索引与暂存文件与缓存
+	当使用 add 将文件设置为追踪文件时，文件会在对象库中保存一个副本，因为没有提交，所以称为暂存文件
+	暂存对象和版本对象一样是一个 blob 对象，但是暂存文件不是版本对象，因为暂存文件可以经过无数次修改
+	索引最开始指向最新版本的所有 blob 对象，使用 add 指令后，暂存文件的映射会更新到索引表中，如果暂存文件是对之前的文件进行修改则会覆盖原来的映射
+	使用 add 时产生暂存文件并更新索引，使用 commit 时暂存文件被保存为版本对象，索引被变化成树对象，然后索引重新指向最新版本的所有 blob 
+	暂存和缓存是一个意思
+	× 和索引相关的命令
+		git diff [--cached]		当使用 cached 时可以查看暂存文件与版本文件的差异，不使用时可以查看 untracked-file 与版本文件的差异
+		git ls-files -s 		查看索引列表
+		git rm --cached id		删除索引列表中 id 对应的映射，该 id 映射的文件将重新变成 untracked-file		
+× 与索引相关的常用指令
+  rm
+	-r			递归删除，用于删除目录
+	-f  		强制删除，用来删除暂存文件
+	--cached	删除索引中对应的映射
+  mv，用于重命名，例如 git mv hello nihao，本质是更新树对象，因为 git 是按内容存储的，不关心具体的文件名
+× 额外知识点
+  git checkout HEAD -- file_name，可以恢复被意外删除但还未提交的文件，注意文件名与 -- 之间有空格，-- 用来区别文件名与命令，因为可能同名
+  	git rm hello
+  	git checkout HEAD -- hello
+  使用 git checkout commit_id 可以回退到某一版本，但是使用 git checkout HEAD 又会被变回来
+  使用 git checkout --help 可以查看 checkout 的关于 HEAD 的其他用法，强推

@@ -1,0 +1,12 @@
+fdisk -l 查看系统中所有磁盘的信息
+fdisk /dev/sdb 使用交互的方式修改磁盘sdb
+   p 显示分区表
+   n 创建新分区
+   t 更改分区类型标记（l  列出类型编号）
+   q 退出，不更改
+   w 保存并退出
+file -s /dev/sdb1 查看磁盘sdb分区1的文件格式（-s表示设备，不加只能检查一般文件的格式）
+mkfs -t ext4 -L data /dev/sdb1 将磁盘sdb分区1格式化为ext4格式并设置卷标为data（-t不加则默认为ext2）
+mkfs -t ext4 在底层调用了 mkfs.ext4
+mount /dev/sdb1 desktop 将磁盘sdb分区1挂载到desktop，desktop本来的数据暂时消失
+umount /dev/sdb1  卸载

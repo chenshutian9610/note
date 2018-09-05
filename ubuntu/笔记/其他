@@ -1,0 +1,13 @@
+桌面图标存放在/usr/share/applications
+   文件名：xxx.desktop
+   文件内容
+   	[Desktop Entry]    	// 相当于shell的#!/usr/bin/bash
+	Name=xxx			// 文件名
+	Comment=$str		// 文件说明
+	Exec=/xxx/xxx		// 执行文件路径
+	Icon=/xxx/xxx		// 图标文件路径
+	Type=Application	// 文件类型
+	
+ifconfig 														查看网卡
+route -n 														列出本机所有当前网卡 ip
+route add/del -net 224.0.0.0 netmask 255.255.255.255 lo			lo 为当前网卡有效名，通过 ifconfig 可查看

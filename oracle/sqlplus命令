@@ -1,0 +1,68 @@
+* conn[ect] user/password @database
+  如果要以特权用户连接数据库需要在最后加上 as sysdba 或 as sysoper
+  connect sys/sys @oracle as sysdba
+* disc[onnect] 断开连接
+
+* 在 sqlplus 中可以输入 sqlplus 命令，也可以输入 sql 语句和 pl/sql 程序，输入后运行有些许差别
+    sqlplus 回车运行
+    sql     加上分号结束，回车运行
+            回车后输入 / 运行
+            回车两次，加入缓冲区，但不执行
+    pl/sql  加上分号后回车运行
+            回车后输入 / 运行
+            回车后输入 . 加入缓冲区，但不执行
+    sql 命令与 pl/sql 程序的前两种方法一样，只有加入缓冲区的形式不同
+
+* 缓冲区操作
+    list    显示缓冲区
+    edit    用默认编辑方式编辑缓冲区
+    n       定位
+    del     删除当前行
+    a       追加
+    c       改变当前行
+    i       新增一行       
+    run | / 执行缓冲区
+    
+    save absolute_filename [create|replace|append]  将缓冲区的文本保存到路径中，save e:/list.txt append
+    get  absolute_filename 把路径中文本写入缓冲区
+    start|@ absolute_filename 执行路径文本
+
+* 注释
+    --      单行
+    /**/    多行
+    remark  单行，分号结束
+
+* 变量 &
+    & 标明一次变量，&& 标明全局变量，define 为变量赋值(使用 define 后变量变为全局变量)，undefine 删除变量
+    select*from table1 where id='&&x';  // 第一次为 x 赋值
+    输入 x 的值                          // 输入 x 为 10
+    select*from table1 where id='&&x';  // x 的值为 10
+    undefine x;                         // 删除 x 的值
+    define x=100;                       // 定义 x 的值为 100
+    select*from table1 where id='&x';   // id 为 100
+    select*from table1 where id='&x';   // 要求输入 x 的值
+* pl/sql 程序的绑定变量与赋值 
+    variable name type
+    execute :name:=value    //  赋值时变量需要加 ：赋值符号为 :=
+    print name              //  显示变量的值
+    
+    variable i number
+    execute :i:=100
+    print i
+
+* show 显示相应的环境变量，set 设置相应的环境变量，注意赋值不用=，而是空格
+    show autocommit
+    set autocommit on
+
+* 描述对象 desc[ribe]
+    desc table1             //  显示的内容相当于可视化操作的“设计表”功能
+
+* 打印 spool
+    spool absolute_filename
+    ...
+    spool off
+    将 sqlplus 中显示的内容打印到指定文件中
+
+* 清屏 clear screen
+
+* 帮助 help ，与 linux 的 man 使用方法一样，help desc

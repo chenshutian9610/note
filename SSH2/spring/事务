@@ -1,0 +1,76 @@
+	<?xml version="1.0" encoding="UTF-8"?>
+	<beans 	xmlns="http://www.springframework.org/schema/beans"
+       	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       	xmlns:context="http://www.springframework.org/schema/context"
+       	xmlns:aop="http://www.springframework.org/schema/aop"
+       	xmlns:tx="http://www.springframework.org/schema/tx"
+       	xsi:schemaLocation="
+			http://www.springframework.org/schema/beans 
+			http://www.springframework.org/schema/beans/spring-beans.xsd
+			http://www.springframework.org/schema/context
+			http://www.springframework.org/schema/context/spring-context.xsd
+			http://www.springframework.org/schema/aop
+			http://www.springframework.org/schema/aop/spring-aop.xsd
+			http://www.springframework.org/schema/tx
+			http://www.springframework.org/schema/tx/spring-tx.xsd">
+	<context:property-placeholder location="classpath:/config/c3p0.properties"/>
+	<bean id="dataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource">
+		<property name="driverClass" value="${jdbc.driverClass}"/>
+		<property name="jdbcUrl" value="${jdbc.jdbcUrl}"/>
+		<property name="user" value="${jdbc.user}"/>
+		<property name="password" value="${jdbc.password}"/>
+	</bean>
+	<bean id="template" class="org.springframework.jdbc.core.JdbcTemplate">
+		<property name="dataSource" ref="dataSource"/>
+	</bean>
+	<bean id="oper" class="pojo.Operation">
+		<property name="template" ref="template"/>
+	</bean>
+	<bean id="service" class="pojo.TransService">
+		<property name="oper" ref="oper"/>
+	</bean>
+	<bean id="tm" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<property name="dataSource" ref="dataSource"/>
+	</bean>
+	......
+	</beans>
+	× 讲解
+		Spring 事务管理有三个核心接口
+			TransactionDefinition		事务属性定义
+			TransactionStatus			事务状态
+			PlatformTransactionManager	平台事务管理
+				TransactionStatus getTransaction(TransactionDefinition definition)	通过事务配置获得事务状态
+				void commit(TransactionStatus status)								以事务状态为参数，提交
+				void rollback(TransactionStatus status)								撤销
+			× 由上可见，事务管理接口是其他两个接口的核心
+			× 实现了事务管理接口的类最常用的是 DataSourceTransactionManager，需要 DataSource 对象做参数
+			× 和事务管理紧密连接的包是 tx 
+			× 事务有三种实现方式，分别是事务代理，AOP 和 annotation，以接口为返回类型
+
+
+× 事务代理
+<bean id="proxy" class="org.springframework.transaction.interceptor.TransactionProxyFactoryBean">
+	<property name="transactionManager" ref="tm"/>
+	<property name="target" ref="service"/>
+	<property name="proxyInterfaces" value="pojo.interfaces.Trans"/>
+	<property name="transactionAttributes">
+		<props>
+			<prop key="*">PROPAGATION_REQUIRED,ISOLATION_REPEATABLE_READ</prop>
+		</props>
+	</property>
+</bean>
+
+× 声明式 AOP
+<tx:advice id="ad" transaction-manager="tm">
+	<tx:attributes>
+		<tx:method name="*" propagation="REQUIRED" isolation="DEFAULT" read-only="false"/>
+	</tx:attributes>
+</tx:advice>
+<aop:config>
+	<aop:pointcut expression="execution(* pojo.TransService.*())" id="cut"/>
+	<aop:advisor advice-ref="ad" pointcut-ref="cut"/>
+</aop:config>
+
+× 注释
+<tx:annotation-driven transaction-manager="tm"/>
+需要 @Transactional 指定事务

@@ -1,0 +1,319 @@
+× struts1 + webwork = struts2
+  其中 struts 和 struts2 是 apache 的开源项目，webwork 是 opensymphony 的开源项目， struts2 以 webwork 为核心
+  
+× struts2 常用类库文件
+    struts2-core                struts2 核心类库
+    xwork-core                  xwork 核心类库
+    ognl                        对象图导航语言，是一种表达语言，以某一对象为基点（根），将对象里的属性使用目录形式表示，如 school.student.name
+    freemarker                  模板 + 数据模型 = freemarker ，可侵入到 html 中生成动态网页，格式为 ${name}
+    javassist                   功能与 asm 一样，但使用时可以不需要知道 jvm 的指令
+    asm-commons                 asm 扩展
+    asm                         java 字节码处理框架
+    commons-io                  
+    commons-fileupload          
+    commons-lang3               java.lang.* 的扩展
+    
+× 创建项目时准备
+	struts2 的库文件要放在 WEB-INF/lib 中，项目运行时会自动加载
+	struts 配置文件放在 WEB-INF/classes 中，如果使用 ide 开发则放在 src 中，java 源码被编译时会一起传送到 classes 文件夹中
+	struts.xml 一定要有 doctype 标签
+  	
+× struts2 要在 web.xml 中声明过滤器，在 struts.xml 中声明 action 的入口和出口
+  过滤器的类是 org.apache.struts2.dispatcher.ng.filter.StrutsPrepareAndExecuteFilter
+  struts.xml 中 action 的配置要放在包空间中，包空间可以被其他包空间继承，所以需要有一个名字
+  包空间通常需要继承 struts-default（定义了许多拦截器）
+  struts.xml 模板
+	<?xml version="1.0" encoding="utf-8"?>
+	<!DOCTYPE struts PUBLIC
+	"-//Apache Software Foundation//DTD Struts Configuration 2.3//EN"
+	"http://struts.apache.org/dtds/struts-2.3.dtd">
+	<struts>
+    	<package name="mypackage" extends="struts-default">
+        <action name="testAction" class="actions.TestAction">
+        <result>/success.jsp</result>
+        </action>
+	</package>
+	</struts>
+  注意：
+	<!DOCTYPE> 标签必须要有，其中的 url 在 Struts-core-xxx.jar 中的 dtd 文件中被指定，不能乱改
+	package 可以被其他包继承，所以需要有 name 
+	最基础的包为 struts-default ，包含在相应的 xml 文件中，保存在 struts-core-xxx.jar 文件中
+	action 的 name 为访问的 url ，扩展名默认为 .action ，使用时可以不加扩展名
+	result 使用属性 name 判断 action 对象返回的字符串，返回相对应的页面（name 默认为 "success"）
+	如果 struts.xml 中有错误，tomcat 会加载错误，打不开网页
+
+× struts2 属性配置（struts2 的属性格式为 name=value）
+	struts2 的属性由 default.properties 定义，可使用以下三种方法修改（覆盖）
+		× 在 struts.xml 的 struts 中通过子标签 constant 的 name 和 value 属性修改
+		× 创建 struts.properties 文件，在里面添加 name=value 格式，一个属性一行
+		× 在 web.xml 的 filter 中通过 init-param 子标签初始化， init-param 有两个子标签，分别为 param-name 和 param-value 
+	struts2 的属性加载顺序为
+		default.properties
+		struts-default.xml
+		struts-plugin.xml
+		struts.xml
+		struts.properties
+		web.xml
+	× struts.propertise 是 web 默认的自定义属性集合，所以级别比 struts.xml 高
+	× 后面加载的属性会覆盖前面加载的属性
+	
+× 包配置
+	包用来管理 action 和拦截器（struts-default 含有默认的拦截器）
+	可以把包看成一个类，包含有四个属性，分别为 name ，namespace ，extends 和 abstract 。当 abstract 为 true 时包不能包含 action 对象的定义
+	包中的 action 标记常用三个属性 name ，class 和 method（method 常和通配符一起使用）
+		class 属性默认为 ActionSupport 
+		可以通过 “action！method” 的 url 格式代替 method 
+		（上述的 url 调用称为动态方法调用，但会带来安全隐患不推荐，如果要使用需要修改 properties 文件的 struts.enable.DynamicMethodInvocation ）
+			
+× result 配置
+	result 含有 name 和 type ，type 为 struts-default 包中的定义的 result-Type ，常用的有：
+		dispatcher（默认）	利用 requestDispatcher 的 forward 实现，转发到一个页面，含有两个属性（location，parse）
+		redirect			利用 sendRedirect 实现，重定向到一个页面
+		chain				转发到一个 action
+		redirectAction		重定向到一个 action
+	<result name="success" type="dispatcher">
+		<param name="location">/success.jsp</param>		location 定位页面
+		<param name="parse">true</param>				location 是否可包含 ognl 表达式
+	</result>
+	× 相当于 <result>/success.jsp</result>
+			
+× 当 struts.xml 太大的时候可以把它拆成几个 xml 文件，但 struts2 框架默认只加载 struts.xml ，可以在其中使用 include 标签引入其他 xml 文件
+  其他 xml 文件要求和 struts.xml 具有一样的标签结构，即一样含有 doctype 和 struts 等标签
+  
+× 在 struts.xml 中可以使用通配符 * ，然后用 {n} 来指定第几个 * 匹配字符串
+  	<action name="*_*" class="actions.{1}" method="{2}">
+  		<result>{2}.jsp</result>
+  	</action> 
+		
+× Action 接口是 action 的基础，包含五个public static final String 型的字符串（SUCCESS,ERROR,NONE,INPUT,LOGIN）和一个 public String execute 方法
+  ActionSupport 类实现 Action 和其他常用的接口，一般创建 action 对象直接继承 ActionSupport 类，需要重写 execute 方法
+  表单参数会自动注入到 action 对象中相应的属性，但需要 action 对象遵循 javabean 规范，即对属性提供 setter 方法
+  Action 与 ActionSupport 是类 com.opensymphony.xwork2 中的接口与类
+  
+× Action 对象访问 servlet API 
+	1.通过 ActionContext 类，类似于 jsp 的 PageContext 对象		（推荐方式）
+		static ActionContext getContext()						一般用这个方法获取 ActionContext 对象
+		void put(String key,Object value)						ActionContext 对象使用这个方法时模拟 request 对象
+		Object get(String key)									
+		Map<String,Object>getParameters()						
+		Map<String,Object>getSession()			
+		Map<String,Object>getApplication()
+		void setApplication(Map<String,Object>Application)
+		void setSession(Map<String,Object>Session)
+		 /*	ActionContext context=ActionContext.getContext();
+			context.getApplication.put("name","hello");
+			context.getSession.put("name","hello");
+			context.put("name","hello"); */
+	2.上述方法只能间接访问，可以通过实现特定接口(*Aware)实现直接访问
+		ServletRequestAware
+		ServletResponseAware
+		SessionAware
+		ServletContextAware
+		× 这四种接口都只含有一个 setter 方法，例如：
+			SessionAware 接口为 public void setSession(Map<String,Object>session)
+			ServletRequest 接口为 public void setServletRequest(HttpServletRequest request)
+		× 这四种接口实质上是拦截器	import org.apache.struts2.interceptor.* ;
+		× 原理和表单自动注入一样，拦截器会将 request 等内置对象的值拦截下来传送到相应的 setter 中
+		  所以即使不实现接口，只要实现接口中的 setXxx 方法也是一样的
+	3.可以通过 ServletActionContext 的静态方法来直接访问 Servlet API
+		static HttpServletRequest getRequest()
+		static HttpServletResponse getResponse()
+		static ServletContext getServletContext()
+		static PageContext getPageContext()
+		× 没有 session ，可以通过 PageContext 对象得到
+		× 底层是通过 ActionContext 和 setter 方法实现
+			首先定义 uri ，如 HTTP_REQUEST ，之后通过 setter 得到对象
+			然后通过 ActionContext.getContext.put(HTTP_REQUEST,request) 存储
+			最后通过（HttpServletRequest）ActionContext.getContext.get(HTTP_REQUEST) 得到对象
+		× ServletActionContext 虽然是通过底层的 ActionContext 实现的，但是各自所处的包不一样
+			ServletActionContext	org.apache.struts2.ServletActionContext
+			ActionContext			com.opensymphony.xwork2.ActionContext
+  × 在上述三种方法中建议使用 ActionContext 来访问 Servlet API ，因为是间接访问耦合度低
+		
+× 域模型与模型驱动的异同
+	当一个 javabean 的属性太多时，再加上相应的 getter 和 setter 方法，如果把所有代码都写进 action 类中会显得特别臃肿，不利于维护与查看
+	域模型
+	  可以把多个属性按域分成多个不同的对象，分别用不同的 bean 来表示，如 User ，Student 等等，然后在 action 给域对象分配 getter 与 setter 方法
+	  但是，因为一个 action 可以包括几个不同的域对象，所以当域对象拥有相同属性时无法区分（如 name），所以使用时一般是 object.property 格式
+	模型驱动
+	  需要实现 ModelDriven<T> 泛型接口，实现其 public T getModel() 方法
+	  需要实例化域对象，没有 getter 和 setter 方法，使用 getModel 返回域对象，getModel 就相当于 getter
+	  一个 action 只包含一个域对象，所以使用时直接 property 就行了，不用像域对象一样加上对象名
+	  
+× 拦截器与拦截栈
+	struts-default 中定义了许多拦截器与拦截栈，拦截链是拦截器按执行顺序串联，拦截栈即拦截链中拦截器的集合
+		比如，有一个拦截栈，栈底为 0 ，栈有 0,1,2,3 ，则拦截链为 3->2->1->0->1->2->3，拦截栈为 {0，1，2，3} 
+		× 执行顺序由拦截栈的声明顺序决定，先声明先执行
+	当向 action 发送请求时会经历过多个拦截器的拦截处理，当 action 返回数据时要经历相反顺序的拦截器
+	自定义拦截器需要实现 interceptor 接口或是 AbstractInterceptor 类
+		Interceptor 需要实现 init ，destroy 和 public String intercept（ActionInvocation invocation）throws Exception 
+		AbstractInterceptor（最常用）实现了 init 和 destroy 方法，只需要重写 intercept 方法 
+		× invocation 参数使用 invoke() 将控制权转移给下一个拦截器或 action 对象（intercept 的重点）
+		× 在 struts.xml 中 <interceptors> 声明与定义拦截器
+			创建拦截器 <interceptor name="xxx" class="xx.xx"/> 
+			引用拦截器 <interceptor-ref name="xxx"/>
+			创建拦截栈 <interceptor-stack name="xxx"> ... </interceptor-stack>
+			× 在 struts-default 中含有一个默认拦截栈 defaultStack，拥有最基本的拦截器功能，如果自定义拦截栈需要引用它
+	
+× struts2 标签库
+	普通标签：控制标签与数据标签
+	UI 标签： 表单标签，非标单标签和 Ajax 标签（可忽略）
+  Struts2 标签的开销较 html 和 jsp 的大，少用，一般只用普通标签和非表单标签
+  Struts2 标签和其他标签的区别，在于它可以访问值栈
+  Struts2 标签库位于 struts2-core.jar 中 meta-inf 的 struts-tags.tld 文件中，使用时需要 taglib 标签
+  	<%@taglib prefix="s" uri="/struts-tags"%> 	struts2 推荐前缀为 s
+  × 控制标签
+  		<s:if>，<s:elseif> 和 <s:else> 使用 test 属性判断，注意结尾要加上 </s:if> ... 
+  		<s:iterator> 
+  			var 		相当于 for var:iterator ，var 的值会被压入值栈，比如 var=“name”，可以通过 <s:property value="name"/> 访问当前遍历到的值
+  			status		取值为 false 或 var ，如果不为 false 可以通过定义的 var 得到其状态信息（count，first，last，index，even，odd）
+  						如 status=“st” ，<s:if test="#st.even"> 判断是否为偶数
+  			value		指定一个数组或集合对象，如： value="{'a','b','c'}"
+  			× 其他如 begin ，end ，step 可采取默认值
+  × 数据标签
+  		<s:property> 	通过 value 指定对象，用于输出数据，类似于 <jsp:getProperty> 
+  		<s:set>  		同上
+  		<s:debug>		显示调试信息，主要是值栈和栈上下文的信息
+  × 表单标签
+  	表单标签常用属性为 label , labelPosition , name , value ，label 用来代替标签旁的文字  name:<input type="text"> == <s:textfield label="name:"/>
+  		<s:form>
+  		<s:submit>
+  		<s:textfield>
+  		<s:textarea>
+  		<s:password>
+  		......
+  	类似于 html ，不重要，直接过
+  × 非表单标签
+  		<s:actionerror>
+  		<s:actionmessage>
+  		<s:fielderror>
+  		× 可以通过 action 对象的 setActionError 或其他相对应的方法设置这几个错误字符串
+  		× 当文件上传错误时，<s:fielderror> 会输出文件错误信息
+  	
+× OGNL 表达式
+	OGNL 可以在 jsp 中使用，其底层应用了 getValue 方法（Ognl 类的静态方法）
+	getValue 是 OGNL 的核心方法
+		× OGNL 在 JSP 中使用时必须在 struts 标签中使用
+		× OGNL 访问类方法时格式为“@全类路径@静态成员”，在 struts2 中默认关闭访问类方法的支持，可以修改属性 struts.ognl.allowStaticMethodAccess 
+	OGNL 在包 ognl 中，其操作围绕着三个要素而进行的：表达式，上下文，根对象
+	× 所以 getValue 也有相应的形式，getValue(expr,context,root) 或 getValue(expr,root) 
+		根对象	可以以任意一个对象为根对象
+		表达式	根对象中属性和方法的访问与操作
+		上下文	是一个单纯的 Map 对象，可以用 HashMap 创建，使用 put 方法压入值栈，访问时需要使用 # , 如 #key.property|method()
+		× 只有访问根的属性或方法不用在前面加符号，context 定义的值不是根的分支，所以需要 # 
+	××××××××
+		例子，User 类含有 name 和 password ，Password 类含有 lengthLimit 
+		import ognl.*;
+		import java.util.HashMap;
+		...
+		class TestOgnl{
+		public static void main(String args[]){
+			HashMap context=new HashContext();
+			User user=new User();
+			Password password=new Password();
+			user.setPassword(password);
+			context.put("USER",user);
+			Ognl.getValue("#USER.password.setLengthLimiter(10)",context,user);	要访问 context 中对象，要在第二个参数使用 context ,在第一个包含 #
+			System.out.print(Ognl.getValue("password.lengthLimit",user);
+		}} 
+ 
+× 值栈 ValueStack
+	ActionContext 对象在过滤器使用 doFilter 方法时被创建，而其中的属性包括有 ValueStack 对象，所以可以通过 ActionContext 获取 ValueStack 对象
+	× ActionContext.getContext().getValueStack()
+  	值栈的生命周期和 Action 对象一样，随 request 创建而创建，随 request 销毁而销毁，所以也可以通过 request 获取 ValueStack 对象
+	× ActionContext.getRequest.getAttribute(ServletActionContect.STRUTS_VALUESTACK_KEY) // 参数为常量 struts.valueStack 
+  	值栈内部结构，可分为两个逻辑部分
+  		ObjectStack 对象栈，CompoundRoot 类，继承 ArrayList 类型
+  		ContextMap 	Map 栈，OgnlContext 类
+  	×　值栈有两个重要的对象　root 与 context ，对应于上面两个逻辑部分
+  		context 包括 request，session，application，parameters，attr ，使用时在前面加上 # ，都可以用来访问请求中的数据（root 不用）
+		× #parameters.a 相当于 ${param.a} 
+  	当采用域模型或模型驱动时会自动将交换的数据压入值栈
+  	在值栈中，域模型的前缀为对象名，而模型驱动的前缀为 model（可省略）
+  	在 jsp 中访问值栈可以使用 ognl 或 el 
+  		ognl 	<s:property value="user.username"/>			
+  		el		${model.price} 
+  		× ognl 必须与 struts 标签一起用
+  		× el 与 ognl 在访问 request 等对象的参数时有区别
+  			el 		${requestScopt.a}
+  			ognl	<s:property value="#session.b"/>
+  		× el 常用的为 param 或 paramValues，分别对应 
+  			request.getParameter("xxx")
+  			request.getParameterValues("xxx")
+  
+× struts2 中的文件上传与下载
+	上传
+		jsp 页面		
+		× 设置 method 为 post 
+		× 设置 enctype 为 multipart/form-data 
+		× 使用 file 标签
+			<input type="file" name="xxx">
+			<s:file name="xxx"/>
+		action 类
+		× 原理是通过表单自动注入将 file 标签指定的对象注入到类中同名的 file 对象，获取输入流时直接 new FileInputStream(file 对象) 
+		× 不要使用 ServletActionContext.getRequest().getInputStream() 来获取输入流，可以通过改变 url 的 contentType 来设置可行性，麻烦，略
+		× 模板如下
+			......
+			private File xxx;
+			private String xxxFileName;						//	FileName 前面的 xxx 为上传文件的 name ，不通过表单获取，而是拦截器自动截取的数据
+			private String xxxContentType;					//	同上
+			.....
+			public String execute(){
+				InputStream in=new FileInputStream(xxx);
+				......
+			}
+		struts.xml 配置
+		× 与原来一样，但可以通过修改拦截器 defaultStack 的关于文件上传的属性来筛选文件
+		<constant name="struts.multipart.maxSize" value="xxx"/>			//	指定过滤器允许的文件最大值，必须！！！！
+		......
+		<action ...>
+			<result>/success.jsp</result>
+			<interceptor-ref name="defaultStack">
+				<param name="fileUpload.maximumSize">1024</param>		//	指定上传文件的最大大小，字节为单位，默认 2M，这里为 1K，记得前缀不能少
+				<param name="fileUpload.allowedTypes">					//	指定上传文件的类型，用逗号隔开
+					text/plain,image/jpeg
+				</param>
+				<param name="fileUpload.allowedExtensions">				//	指定上传文件的扩展类型
+					.jpg,.txt
+				</param>
+			</interceptor-ref>
+		</action>
+	× 上传错误时显示的提示由 struts-messages.properties 指定，键值对格式，如下
+		struts.messages.error.file.extension.not.allowed=File extension not allowed:{0} "{1}" "{2}" {3}
+		前面的文字为在页面上直接显示的内容，可以改成中文，后面的 {n} 按原来的写，最好不改，意思如下
+			{0}		file 标签中指定的 name
+			{1}		文件的真实名字
+			{2}		临时目录的名称
+			{3}		文件的 contentType
+		× 1 和 2 是字符串，使用需要加上双引号
+		最好不直接修改 properties 中的数据，在 classes 的一个包中自定义一个 propertise 文件，在里面设置要设置的属性，然后在 struts.xml 中添加常量修改
+			<constant name="struts.custom.i18n.resources" value="package.filename"/>  	filename 不包含扩展名
+	  × 文件上传时首先被过滤器过滤，如果超过 struts.multipart.maxSize 的值直接报错
+	  	随后被拦截器拦截，如果大小超过 fileUpload.maximumSize 的值或其他条件不满足，报错并返回 INPUT
+	  	所以在 rusult 中要设置一个接受 input 的页面，在该页面代码添加 <s:fielderror/> 可以显示拦截器拦截的错误，即为 struts-messages 指定的提示
+	下载
+		struts.xml 配置
+		× 需要将 result 标签的类型改为 stream（默认为 dispatcher），stream 有四个参数可修改，其中前两个必须使用，如下
+			inputName				必须与 action 中的输入流的 name 一样
+			contentDisposition		默认为 inline（在网页中直接显示），需要设置为 attachment（下载，一般在后面加上 filename=xxx 指定文件名）
+			contentType				下载的文件的网络传输类型
+			bufferSize				下载时缓存区大小
+	  	action 类
+	  	× 只需要有一个 public InputStream getXxx() throws IOException 方法就行了，不需要给 Xxx 指定成员变量
+	  		... action 中
+            public InputStream getDownloadFile(){
+            	return new FileInputStream("...");
+            }
+            ... struts.xml 中
+	  		<result type="stream">
+                <param name="inputName">downloaFile</param>		//	名字与 action 中的一样
+                <param name="bufferSize">1024</param>
+                <param name="contentType">image/jpeg</param>
+                <param name="contentDisposition">
+                    attachment;filename="win"
+                </param>
+            </result>
+	× 上传注意过滤器的大小限制和拦截器设置的属性限制，下载注意修改 result 的类型和 stream 的 inputName 属性
+	× 上传是 multipart/form-data ，下载是 contentDisposition -> attachment
+	
+	× struts2 有包这个概念，所以路径的表达一般是使用 "." 而 hibernate 和 Spring 使用 "/" 

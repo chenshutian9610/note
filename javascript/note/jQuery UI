@@ -1,0 +1,66 @@
+× 使用 jQuery UI 库可以实现更好的用户交互，使用时需要在 <head> 中使用以下语句导入相应的库文件
+    <link href="jquery-ui-1.12.1/jquery-ui.css" rel='stylesheet'>       //  导入 css
+    <script src="jquery-ui-1.12.1/jquery-ui.js"></script>               //  导入 js
+  jQuery UI 的 js 文件必须放在 jQuery 的库文件后面，否则会报错
+
+* jQuery UI 库的方法中的 option 参数为字符串变量或是对象变量,如 $('p').dialog({autoOpen:false})
+× 用户交互（除了 droppable 以外其他都可以无参直接使用）
+    draggable(option)       
+        使节点或控件可拖动（移动）
+        常用参数为 disable 和 enable（字符串变量）
+        无参时可以直接使用，但如果被 disable 了就需要 enable 解锁后才能用
+    droppable(option)       
+        使节点称为可以被放置的地方
+        常用参数为自定义 object 变量，如
+        $('table').droppable({
+            drop:function(){alert('drop')}
+        })
+    sortable(option)        
+        使节点可以被手动排序，例如针对 ul
+    resizeable(option)      
+        使节点可以被设置大小
+    
+× 可视控件，widget（使用时除了 dialog 需要参数以外，其他都可以无参使用）
+    accordion(option)   
+      折叠面板，只对标签有用，索引从 0 计算，偶数为标题，奇数为内容
+      <div id='#div'>
+        <p>china</p>    //  title
+        <p>nihao</p>    //  content
+        <p>world</p>
+        <p>hello</p>
+      </div>
+      <script>$('#div').accordion();</script>
+    datepicker(option)  
+      时间控件，由文本框节点来使用，为文本框提供可视的日期选择
+      datepicker 默认为英文，中文格式需要去官网下载语言包
+    menu(option)        
+      需要和 ul 一起使用，把 ul 的列表化成菜单
+        <ul>
+          <li>java
+            <ul>
+              <li>jsp</li>
+              <li>servlet</li>
+            </ul></li>
+          <li>php</li>
+        </ul>
+        <script>$('ul').menu();</script>
+    dialog(option)
+      dialog 是自动打开的，要设置初始化不显示对话框需要传入一个对象变量 {autoOpen:fale}，在需要打开的时候使用 open 参数（字符串变量）
+      dialog 是将某一节点化为对话框，对话框的文本即该节点的文本，对话框的标题即该节点的 title 属性
+        <p title='hello'>hello world</p>
+        <script>$('p').dialog({autoOpen:false});$('p').dialog('open');</script>
+    autocomplete(option)
+      和文本框联系在一起，当输入前面的字母时会自动补全，需要引入一个对象变量（含有 source 数组）
+      $(':text').autocomplete({source:['java','jsp']})
+    tabs(option)
+      一般不用参数，但这个条件需要的比较多，tab 选项需要 ul 来完成，li 中需要有 a 标签，用来指向导向的 tab 页
+      <div id='div'>
+        <ul>
+          <li><a href='#java'>java</a></li>
+          <li><a href='#jsp'>jsp</a></li>
+        </ul>
+        <div id='java'>hello java</div>
+        <div id='jsp'>hello jsp</div>
+      </div>
+      <script>$('#div').tabs();</script>
+      × a 和 ul 标签是必须的，div 可以换成其他

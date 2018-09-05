@@ -1,0 +1,61 @@
+* JavaBean 本来是给 IDE 设置的，用于可视化设置属性
+* JavaBean 规范
+		BeanInfo 						
+		PropertyDescriptor 	为属性和属性编辑器建立联系
+		PropertyEditor 			
+	BeanInfo 是一个接口，常用实现类为 SimpleBeanInfo，自定义 BeanInfo 命名规范为 <Bean>BeanInfo
+	PropertyEditor 是一个接口，常用实现类为 PropertyEditorSupport，自定义 PropertyEditor 命名规范为 <Bean>Editor
+	运行时 Bean 会自动匹配其 BeanInfo 和 PropertyEditor（三者必须在同一个类中）
+	
+	* BeanInfo 
+		PropertyDescriptor[] getPropertyDescriptors()		
+		
+	* PropertyDescriptor 
+		PropertyDescriptor(String PropertyName,Class beanClass)
+		public void setPropertyEditorClass(Class editorClass)
+		
+	* PropertyEditor 
+		get/setValue				获取或设置属性对象
+		get/setAsText				使用字符串格式获取或设置属性的值
+		
+	* BeanInfo 和 PropertyDescriptor 只有在可视化时才需要用到，平时很少用
+		public class UserBeanInfo extends SimpleBeanInfo {
+			@Override
+			public PropertyDescriptor[] getPropertyDescriptors() {
+        PropertyDescriptor user=new PropertyDescriptor("user",User.class);
+        userDescrtptor.setPropertyEditorClass(UserEditor.class);
+        return new PropertyDescriptor[]{user};
+			}
+		}
+		
+* Spring JavaBean 扩展
+	* 容器在实例化 bean 后通过 BeanWrapper 对其进行包装（设置属性）
+	* BeanWrapperImple 含有两种属性编辑器
+		defaultEditors	对常用属性的默认设置（基本类型，集合类型和资源类型[class,url,resource...]）
+		customEditors 	自定义属性编辑器
+	* Spring 不需要可视化的 JavaBean，所以自定义 PropertyEditor 时只需要重写 setAsText 方法
+		注意 PropertyEditor 需要符合其命名规范，否则则需要手动注册属性编辑器
+		
+	* Bean
+		public class User {
+			String name;
+			int age;
+			...
+		}
+	* PropertyEditor
+		public class UserEditor extends PropertyEditorSupport {
+			@Override
+			public void setAsText(String text) throws IllegalArgumentException {
+        User user=new User();
+        String[]str=text.split(",");
+        user.setName(str[0]);
+        user.setAge(Integer.parseInt(str[1]));
+        setValue(user);
+			}
+		}
+	* beans.xml
+		<bean id="manager" class="my.UserManager">
+			<property name="user" value="chen,20"/>		
+		</bean>
+	
+	* 和 FactoryBean 差不多，不过 FactoryBean 可以在 bean 设置，而 PropertyEditor 是在 property 中（见 03-IoC 高级）

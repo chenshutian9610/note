@@ -1,0 +1,215 @@
+× AOP，aspect oriented programing，面向切面编程
+	Joinpoint	目标类的方法
+	Pointcut	要被切面织入的 Joinpoint，拦截点的集合
+	Advice		在 PointCut 指向的方法使用前后的操作，增强方法，只在方法外部，不能在方法内部操作
+	Target 		目标类
+	Weaving		将 Aspect 织入 PointCut，生成 Proxy
+	Proxy		代理，需要和目标类或目标类接口一样的类型（强制转化或内部转化）
+	Aspect		切面，Advice 的集合
+	将切面织入目标类，生成代理
+	
+× 手动代理
+  代理模式是 java 中常用的设计模式，代理加工原型的方法，并像原型一样使用被加工的方法（原型即目标类，被代理的类）
+  	JDK 动态代理
+  	1.创建一个接口
+  	2.创建一个实现接口的类，即目标类
+  	3.创建切面类，定义一个或多个 advice 方法
+  	4.按照工厂的模式创建一个工厂类，类中包含一个静态方法 getBean，方法中包括接口，目标对象，切面对象，代理对象
+  	× 动态代理是 jdk 本身提供的模式，其包在 java.lang.reflect 中
+  	× 工厂返回对象必须是接口类型，所以 JDK 动态代理模式需要原型必须实现一到多个接口
+  	× 工厂类示例
+  		public class Factory{
+  			public static MyAimInterface getBean(){
+  			final MyAim aim=new MyAim();
+  			final MyAspect aspect=new MyAspect();
+  				return (MyAimInterface)Proxy.newProxyInstance(
+  					Factory.class.getClassLoader,new Class[]{MyAimInterface.class},new InvocationHandler(){
+  						public Object invoke(Object proxy,Method method,Object[]args) throws Throwable{
+  							aspect.before();
+  							Object obj=method.invoke(aim,args);
+  							aspect.after();
+  							return obj;
+  						}
+  					});
+  			}
+  		}
+  		× 目标对象和切面对象在生成代理对象的过程中不可变，所以一般用 final 标志
+  		× 代理对象通过 Proxy.newProxyInstance(ClassLoader,Class[]interfaces,InvocationHandler) 生成
+  			1.ClassLoader 是要获取当且类的类加载器，需要使用 Class 对象的 getClassLoader 方法得到
+  			  	× Class 对象可以通过 MyAim.class 或 aim.getClass() ，前者通过类得到（静态），后者通过对象得到（动态，reflect）
+  			2.Class[] 是要获取目标类实现的所有接口的类对象，可以使用 aim.getClass().getInterfaces() 得到，也可以通过上面直接给出对象
+  			3.InvocationHandler 是一个接口，需要使用匿名类方式手动实现，其只包含一个方法 
+  				public Object invoke(Object proxy,Method method,Object[]args) throws Throwable
+  				× invoke 方法必须通过 Method 对象的 invoke(aim,args) 方法返回 Object 对象，并且需要抛出 Throwable 异常
+  				× invoke 方法里面实现将切面织入目标类
+  	CGLIB 代理
+  	× CGLIB，code generation library，代码生成包
+  	× 常使用其关于代理的包 org.springframework.cglib.proxy
+  	× CGLIB 不要求目标类必须实现接口，它的原理是利用 asm 框架生成目标类的子类代替目标类的位置，所以返回 proxy 时其类型为目标类的类型
+  	× 重点是通过 Enhancer 对象来设置超类和回调函数（拦截器），回调函数就是织入的过程，并将产生的对象回传给 Enhancer，帮助其生成代理
+  		public class Factory{
+  			public static MyAim getBean(){
+  				final MyAim aim=new MyAim();
+  				final MyAspect aspect=new MyAspect();
+  				Enhancer enhancer=new Enhancer();
+  				enhancer.setSuperclass(aim.getClass());
+  				enhancer.setCallback(new MethodInterceptor(){
+  					public Object intercept(Object proxy,Method method,Object[]args,MethodProxy methodProxy)throws Throwable{
+  						aspect.before();
+  						Object obj=method.invoke(aim,args);
+  						aspect.after();
+  						return obj;
+  					}
+  				});
+  				MyAim proxy=(MyAim)enhancer.create();
+  				return proxy;
+  			}
+  		}
+  		× 生成代理需要类加载器，超类或接口的类对象和织入操作，这些在 CGLIB 中都被封装在 Enhancer 中
+  		× 在 jdk 动态代理中，织入操作是通过 InvocationHandler 类的 invoke 方法进行
+  		  在 CGLIB 中，织入操作是通过 MethodInterceptor 拦截器的 intercept 方法进行
+  		  × intercept 方法中的处理和 invoke 是一样的，但是形参比其多了一个 MethodProxy 对象，织入的关键还是 Method 对象的 invoke 方法
+  		× Enhancer 对象通过 setSuperclass 设置超类，通过 setCallback 设置拦截器，通过 create 生成代理（Object 型）
+  	
+× 声明式 bean
+  × 通过 xml 配置工厂，工厂为 org.springframework.aop.framework.ProxyFactoryBean 类，工厂属性如下：
+  		target				通过 ref 指向目标类，只有 target 可以使用 ref，其他属性只能使用 value
+  		interfaces			代理接口，value 为目标类的接口，如果有多个接口使用 <list><value> 标签
+  		proxyTargetClass	代理目标类，value 为 true 或 false，为 true 时使用 CGLIB
+  		interceptorNames	value 为 切面对象，不能用 ref
+  		optimize	  		强制使用 CGLIB 
+  		× bean 工厂可以实现 jdk 动态代理和 cglib 代理
+  		× bean 工厂中没办法实现织入操作，所以切面类必须实现 Spring AOP 或 aopalliance 定义的标准接口，常用接口如下
+  				org.springframework.aop.MethodBeforeAdvice		前置通知
+  				org.springframework.aop.AfterReturningAdivce	后置通知
+  				org.springframework.aop.ThrowsAdvice			异常抛出通知
+  				org.aopalliance.intercept.MethodInterceptor		前后通知（环绕通知）
+  				× 最常用的是 aopalliance 定义的 MethodInterceptor 接口
+  				× cglib 中也使用了 MethodInterceptor 接口，不过该接口属于 org.springframework.cglib.proxy 包
+  				  并且该接口的实现方法是 intercept ，而 aopalliance 实现的是 public Object invoke(MethodInvocation mi) throws Throwable
+  				  aopalliance 的 invoke 不使用 Method 对象的 invoke 返回对象，而是使用 MethodInvocation 的 proceed 方法（无参）
+  				  织入操作需要的目标类在 bean 工厂中配置，所以 proceed 无参
+  				  	 public class MyAspect implements MethodInterceptor{
+  				  	 	public Object invoke(MethodInvocation mi) throws Throwable{
+  				  	 		System.out.println("before");
+  				  	 		Object obj=mi.proceed();
+  				  	 		System.out.println("after");
+  				  	 		return obj;
+  				  	 	}
+  				  	 }
+  	× xml 文件模板
+  		<beans ......>
+  			<bean id="aim" class="pojo.MyAim"/>
+  			<bean id="aspect" class="aop.MyAspect"/>
+  			<bean id="proxy" class="org.springframework.aop.framework.ProxyFactoryBean">
+  				<property name="target" ref="aim"/>
+  				<property name="Interfaces" value="pojo.MyAimInterface"/>
+  				<property name="proxyTargetClass" value="false"/>
+  				<property name="interceptorNames" value="aspect"/>
+  			</bean>
+  		</beans>
+  				  			
+× 织入操作都是返回 Object 对象，并且都需要抛出 Throwable 异常
+
+× AspectJ 开发
+  × AspectJ 是一种 AOP 框架，比 Spring AOP 定义的模式好用，Spring 提供了集成的接口
+  × 使用 AspectJ 需要 Spring—aspects 和 aspectj.weaver 的 jar 包
+  × AspectJ 和其他 aop 框架拥有类似的术语
+  		JoinPoint		连接点，可以用于获取目标对象的类型，方法名或方法参数等
+  		pointcut		aop:config 的子标签，含有 experssion 属性（定义哪些连接点为切入点）
+  		before			前置通知，切入点的前面
+  		ater-returning	后置通知，切入点的后面
+  		around			围绕切入点，AspectJ 定义 around 含有织入特性（织入操作通过 xml 或 annotation 定义，织入特性即返回 Object 抛出 Throwable）
+  		after-throwing	接收 around 抛出的 Throwable 异常
+  		after			切入点执行完后，相当于 finally ，不管有没有异常都会执行
+  		× 使用 xml 时顺序为 before -> around_start -> pointcut -> around-over -> after-returning -> after 
+  		  使用 annotation 时顺序为 around_start -> before ->pointcut -> around-over -> after -> after-returning
+  		  一般只使用其中的一个通知类型
+  × AspectJ 中除了 arround 以外的通知都要含有 JoinPoint 参数，after-throwing 还需要一个 Throwable 型参数接收异常
+    around 需要一个 ProceedingJoinPoint 的参数，表示可以执行目标方法（使用 proceed，和 aopalliance 的标准一样）
+    around 虽然含有织入特性，但不是必须的，可以不要
+  × 可以通过两种方式声明 AspectJ （xml，annotation）
+  		xml
+  		× 需要在 beans 配置 aop 前缀和其 xsd
+  			<?xml version="1.0" encoding="UTF-8"?>
+			<beans 	xmlns="http://www.springframework.org/schema/beans"
+       				xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       				xmlns:aop="http://www.springframework.org/schema/aop"
+       				xsi:schemaLocation="
+						http://www.springframework.org/schema/beans 
+						http://www.springframework.org/schema/beans/spring-beans.xsd
+						http://www.springframework.org/schema/aop
+						http://www.springframework.org/schema/aop/spring-aop.xsd">
+    			<bean id="man" class="pojo.Working"/>
+   				<bean id="aspect" class="aop.MyAspect"/>
+    			<aop:config>
+    				<aop:aspect ref="aspect">
+	    			<aop:pointcut expression="execution(* pojo.Working.*(..))" id="cut"/>
+    				<aop:before pointcut-ref="cut" method="before"/>
+			    	<aop:after pointcut-ref="cut" method="after"/>
+    				<aop:after-returning pointcut-ref="cut" method="afterReturning" returning="x"/>
+    				<aop:around pointcut-ref="cut" method="around"/>
+    				<aop:after-throwing pointcut-ref="cut" method="afterThrowing" throwing="t"/>
+    	    		</aop:aspect>
+			    </aop:config>
+			</beans>
+			× doctype 只能配置 core 中的 beans 的格式，其他如 context，aop 等都不行，需要使用 xsd 验证
+			× aop 在 config 中配置切面，在切面中配置切入点和通知（每个通知都需要引用切入点）
+			× 配置 pointcut 时使用 expression 来指向切入点，其值一般为 execution（return_type method(args)）
+				return_type 为方法的返回类型，可以使用 void 等具体的类型，也可以使用 * 表示所有类型
+				method 为切入点，需要使用全名（包括包，类）pojo.Working.insert，可以使用 * 代替其中的字段
+				args 为参数	，可以使用具体的参数，也可是使用 .. 代表所有的参数（0 或多个）
+					pojo.*.*() 		pojo 包中所有类和接口的所有无参的方法
+					pojo..*.*()		pojo 包及其子包中所有类和接口的所有无参方法
+					pojo..*.*(..)	pojo 包及其子包中所有类和接口的所有方法
+			× 使用 after-throwing 时必须含有属性 throwing（值为方法中 Throwable 型的形参名），不然会报错
+  		annotation
+  		× org.aspectj.lang.annotation 提供了很多注解用来代替 xml 臃肿的操作，常用如下
+  			@Aspect				声明切面，需要放在 @Component 前面（如果有的话）
+  			@Pointcut			声明切点，需要含有 execution 表达式，切点名字由切点方法提供（空方法）
+  			@Before				含有切点方法
+  			@Around				同上
+  			@AfterReturning		同上
+  			@After				同上
+  			@AfterThrowing		含有两个参数，value 和 throwing ，之间用逗号隔开
+  			× 当只需要一个参数时可以忽略属性，当有多个时就不行
+  			× 注释没有 ref 属性，赋值统一用 value
+  				@Aspect
+				public class MyAspect{
+					Pointcut("execution(* pojo.Working.*(..))")
+			××××	private void cut() {}
+					
+					@Before("cut()")
+					public void before(JoinPoint point) {
+						System.out.println("before");
+					}
+					
+					@After("cut()")
+					public void after(JoinPoint point) {
+						System.out.println("after");
+					}
+					
+					@AfterReturning(value="cut()")
+					public void afterReturning(JoinPoint point) {
+						System.out.println("after-returning");
+					}
+					
+					@Around("cut()")
+					public Object around(ProceedingJoinPoint point) throws Throwable{
+						System.out.println("around start");
+						Object obj=point.proceed();
+						System.out.println("around over");
+						return obj;
+					}
+					
+					@AfterThrowing(value="cut()",throwing="t")
+					public void afterThrowing(JoinPoint point,Throwable t) {
+						System.out.println(t.toString());
+					}
+				}
+				× @AfterReturning 的 value 可以不加，注意切点方法带有（），不能省略
+				在 ApplicationContext.xml 中配置时使用 <aop:aspectj-autoproxy/> 打开自动代理，xml 会根据 MyAspect 的注释生成相应配置文件
+
+× 在 java 中两个词连在一次一般是用开头大写区分（AfterReturning），而在 xml 中一般是用 - 做间隔（after-returning）
+× xml 中单词一般都是小写
+× 除了 cglib 以外的代理都是使用接口作为返回参数类型，为了不混乱，尽量养成用接口来使用方法的习惯

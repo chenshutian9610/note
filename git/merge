@@ -1,0 +1,51 @@
+× 合并分支前，最好保证工作目录干净，不然脏的环境可能会增高合并冲突的几率，难于维护
+× 使用 merge 将其他分支合并到当前分支中，如 git merge dev（将 dev 合并到当前分支）
+× 可以使用 git log 的 --graph 来查看提交图，和 gtk 一样的作用
+× 当合并没有冲突时会直接显示成功，当冲突时会显示冲突错误和原因，当冲突时
+	通过 ls-files -s 可以查看所有索引，-u 选项可以只查看引发冲突的文件，如下
+		git ls-files -u
+			100644 ce013625030ba8dba906f756967f9e9ca394464a 1	test
+			100644 aa85d50f72fe942c43bfbd089008ad0d5eb5d7cd 2	test
+			100644 afecd8ad67ef1625c507256aaf2fcf803b8657f9 3	test
+		× 上述可以看到同一个文件有三个版本，所以冲突时的 diff 命令的返回结果和平常不太一样，并且 id 与文件名之间的数字不是 0（0 表示不冲突）
+			数字为 1 表示合并的，2 表示当前分支的 HEAD，3 表示被合并的分支的 HEAD
+			  	× 1 所表示的是两个文件的不冲突地方，比如两个文件都含有 hello world 这一行，那么 :1:test 表示的就是 hello world
+			  	× 2 与 HEAD 相关联，可以使用 --ours 或 :2 来访问，如 git show :2:test
+			  	× 3 与 MERGE_HEAD 相关联，可以使用 --theirs 或 :3 来访问，如 git log --theirs
+			使用 git diff 时比较工作目录中的此文件和 HEAD 与 MERGE_HEAD 
+			  	hello world
+			  	++<<<<<<< HEAD
+				 +nihao
+				++=======
+				+ hello	
+				++>>>>>>> test
+				× 冲突时冲突文件会含有 <<< === >>> 这些标记，表示要修改的地方
+			    × 最左边的两个 + 号，左边的 + 是相对于 HEAD 产生的更改，右边的是相对于 MERGE_HEAD
+			      （像 <<< === >>> 这些在原来的版本都没有出现过，所有有两个 + ，而 nihao 和 hello 这两个只有一个 + ，一右一左）
+			在冲突时使用 git log 可以使用几个选项
+				--merge 		只显示冲突的文件
+				--left-right	显示 ours 和 theirs 的提交历史
+				-p				显示补丁（patch）
+				× 当冲突文件很多时，可以在后面加上冲突文件的名字，只显示此文件相关的历史
+					git log --merge --left-right -p test
+			当修改掉冲突问题后并 add 到索引，使用 ls-files -s 可以看到 test 只有一个版本了，并且冲突标志变成了 0
+			合并时会自动产生 MERGE_HEAD 和 MERGE_MSG，后者为提交时的默认提交信息，所以提交时可以不加 -m
+× 当想要退出合并时，使用 reset 的 --hard 选项退回到某个版本，如 git reset --hard HEAD
+  如果是已经合并完成想要撤销，就需要 ORIG_HEAD，如 git reset --hard ORIG_HEAD
+× 合并时 git 自动选择最简单有效的合并策略，合并策略核心是依赖合并基础 merge-base，两条分支可能有多个合并基础，常用合并策略如下
+	退化合并，合并时不创建一个新的提交
+		already up-to-date	重复执行两次相同的合并的情况（第一次合并成功），如 git merge dev;git merge dev
+		fast-forward		合并不冲突的时候，会将当前分支的 HEAD 指向被合并分支的 HEAD，如 git merge dev，直接使用 dev 的最新提交作为本分支的 HEAD
+							这种情况下如果想要强制生成一个提交的话，使用 --no-ff 选项，如 git merge --no-ff -m'new commit' dev
+	常规合并
+		resolve				解决策略，乐观地定位一个合并基础（随意）
+		recursive（默认）	递归策略，生成一个临时合并来包含所有合并基础，然后以这个临时合并作为合并基础
+		octopus				章鱼策略，底层使用递归策略，是唯一可以合并多个分支的策略
+× 合并策略需要使用合并驱动程序来进行合并
+	text		使用三方合并标志（<<< === >>>）
+	binary		在索引中标志文件为冲突的
+	union		将两个文件的所有内容放在一起
+	× 每个合并驱动程序接受三个临时文件名（合并的，我们的，他们的）
+× 压制合并
+	除了 git 以外的 VCS 默认使用压制合并，将被合并分支的多个提交压制成一个大提交，然后再进行合并，这样做会丢失被合并分支的历史记录
+	git 默认保留所有分支的历史记录

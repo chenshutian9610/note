@@ -1,0 +1,25 @@
+public class TestNow {
+	@BeforeClass                                //  在所有测试的最开始运行，必须是 static 方法
+	public static void beforeClass() {
+		System.out.println("begin");
+	}
+	@Before                                     //  每次测试方法开始之前运行
+	public void before() {
+		System.out.println("before");
+	}
+	@Test(expected=Exception.class,timeout=1)   //  Test 表示测试，excepted 后接 Class 对象，timeout 单位毫秒，必须符合才正确
+	public void test() throws Exception{
+		System.out.println("test");
+		throw new Exception();
+	}
+	@After                                      //  每次测试方法结束之后运行
+	public void after() {
+		System.out.println("after");
+	}
+	@AfterClass                                 //  在所有测试结束之后运行，必须是 static 方法
+	public static void afterClass() {
+		System.out.println("over");
+	}
+}   
+//  BeforeClass -> Before -> Test -> After -> AfterClass
+//  jUnit 还有一个注释 @Ignore，表示忽略这个方法，但是其实什么都不加也是一样的效果，所以一般不会使用

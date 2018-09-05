@@ -1,0 +1,69 @@
+* BeanFactory 
+		通过 BeanFactory 来获取 Bean 很麻烦，需要使用到 DefaultListableBeanFactory 和 XmlBeanDefinitionReader
+		通过 HierarchicalBeanFactory 接口能够实现父子容器的作用，子容器可以访问父容器，反之不行
+* ApplicationContext
+		* ApplicationContext 支持资源解析，事件机制，国际化信息等功能
+		* ApplicationContext 常用实现类有 ClassPathXml~ 和	AnnotationConfig~（针对 JavaConfig 配置方法）
+		* WebApplicationContext 是一种特殊的接口，常用实现类有 Xml~ 和 AnnotationConfig~
+			其比一般的 ApplicationContext 多了三种范围 request，session，global session
+			需要在 web.xml 中配置监听器和资源定位（在老版本中不能使用监听器，只能使用 servelt）
+		* 在 web.xml 中 servlet 标签可以通过 load-on-startup 来设置启动顺序，值为数字 
+			如果使用 servlet 来配置 log4j 和 spring，log4j 先启动，spring 在后
+			
+-------------------- JavaConfig --------------------
+
+@Configuration
+public class Config {
+    @Bean(name="user")		//	如果不使用 name，则 bean 名默认为方法名
+    public User get(){
+        User user=new User();
+        user.setName("chen");
+        user.setAge(10);
+        return user;
+    }
+}
+
+-------------------- web.xml --------------------
+
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app>
+		<!-- 配置 log4j -->
+    <context-param>
+        <param-name>log4jConfigLocation</param-name>
+        <param-value>classpath:log4j.properties</param-value>
+    </context-param>
+    <listener>
+        <listener-class>org.springframework.web.util.Log4jConfigListener</listener-class>
+    </listener>
+		<!-- 使用 JavaConfig 来配置 WebApplicationContext -->
+    <context-param>
+        <param-name>contextClass</param-name>						
+        <param-value>org.springframework.web.context.support.AnnotationConfigWebApplicationContext</param-value>
+    </context-param>
+    <context-param>
+        <param-name>contextConfigLocation</param-name>	
+				<param-value>My.Config</param-value>
+    </context-param>
+    <listener>
+        <listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
+    </listener>
+</web-app>
+
+-------------------- 生成容器 --------------------
+
+		//	BeanFactory
+		ResourcePatternResolver resolver=new PathMatchingResourcePatternResolver();
+    Resource resource=resolver.getResource("classpath:beans.xml");
+    DefaultListableBeanFactory factory=new DefaultListableBeanFactory();
+    XmlBeanDefinitionReader reader=new XmlBeanDefinitionReader(factory);
+    reader.loadBeanDefinitions(resource);
+		
+		//	ApplicationContext
+		ApplicationContext context=new ClassPathXmlApplicationContext("beans.xml");
+		
+		//	JavaConfig
+		ApplicationContext context=new AnnotationConfigApplicationContext(Config.class);
+		
+		//	WebApplicationContext
+		ServletContext application= ... ; 
+		WebApplicationContext context=WebApplicationContextUtils.getWebApplicationContext(application);

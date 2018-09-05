@@ -1,0 +1,15 @@
+* 模型-视图-控制器，即 model-view-controller ，分别对应 javaBean-jsp-servlet 
+  JavaBean 只负责数据存储 
+  servlet 负责数据操作，不涉及页面显示，一般通过重定向或转发到 jsp
+
+* servlet 负责创建 javaBean ，然后重定向或转发到 jsp 中
+  被转发的 jsp 的 useBean语句 用 type 取代 class ： <jsp:useBean id="" type="" scope="" />
+  
+* mvc 的生存周期即为 javaBean 的生存周期：request ，session ，application
+  servlet 通过编写的 javaBean类 创建一个对象，然后通过相应的周期对象使用 setAttribute 关联 bean对象
+  import beans;
+  ......
+  mybean text=new mybean();
+  HttpSession session=request.getSession(true);
+  session.setAttribute("text",text);   //  "text" 为 useBean 中的 id
+  ......

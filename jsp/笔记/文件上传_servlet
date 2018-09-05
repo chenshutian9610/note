@@ -1,0 +1,77 @@
+package servlets;
+import java.io.*;
+import javax.servlet.*;
+import javax.servlet.http.*;
+public class Controller extends HttpServlet{
+	public void init(ServletConfig config)throws ServletException{
+		super.init(config);
+	}
+	public void doPost(HttpServletRequest request,HttpServletResponse response)throws ServletException,IOException{
+		InputStream in=null;
+		OutputStream out=null;
+		RandomAccessFile random=null;
+		File temp=null;
+		File done=null;
+		int i=-1;
+		int j=-1;
+		long start=1L;
+		long end=1L;
+		String str=null;
+		byte[]b=new byte[1000];
+		// getTempFile
+		temp=new File("/home/wanna/tempFile");
+		in=request.getInputStream();
+		if(!temp.exists())
+			temp.createNewFile();
+		out=new FileOutputStream(temp);
+		while((i=in.read(b))!=-1) 
+			out.write(b,0,i);
+		in.close();
+		out.flush();
+		out.close();
+		/* ***** correct start ***** */
+		// getFilename
+		random=new RandomAccessFile(temp,"r");
+		random.readLine();
+		str=random.readLine();
+		i=str.lastIndexOf("\"");
+		j=str.lastIndexOf("\"",i-1);
+		str=str.substring(j+1,i);
+		done=new File("/home/wanna/"+str);
+		if(!done.exists())
+			done.createNewFile();
+		// getStartAndEnd
+		i=0;
+		while(i<2) {
+			random.readLine();
+			i++;
+		}
+		start=random.getFilePointer();
+		random.seek(random.length());
+		end=random.getFilePointer();
+		i=0;
+		while(i<2) {
+			random.seek(end-1);
+			end=random.getFilePointer();
+			if(random.read()=='\n')
+				i++;
+		}
+		// getFileContent
+		out=new FileOutputStream(done);
+		random.seek(start);
+		while(random.getFilePointer()<end) {
+			i=random.read(b);
+			if(random.getFilePointer()<end)
+				out.write(b,0,i);
+			else {
+				j=(int)(random.getFilePointer()-end)+1;	//	计算超出多少
+				out.write(b,0,i-j);						//	只读取到 end 之前一个字节
+			}
+		}
+		out.flush();									//	最关键的刷新内存
+		random.close();
+		out.close();		
+		// over
+		response.sendRedirect("success.jsp");
+	}
+}

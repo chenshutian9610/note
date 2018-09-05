@@ -1,0 +1,54 @@
+安装
+  apt-cache
+    pkgnames        查找软件，模糊查询        
+    search          同上，返回详细信息
+    policy          返回某个软件的版本信息
+  apt-get
+    update          通过 sources.list 更新软件元数据，包括所有软件的所有信息，apt-cache 通过这些信息来查找
+    upgrade         更新全部软件，如果依赖也更新了版本，则返回错误
+    dist-upgrade    更新软件及软件的依赖，需要在 upgrade 之后使用
+    install         安装软件
+    autoremove      卸载软件
+    source          下载源代码，但很少使用，如果需要源代码编译可以直接去官网下载
+  ppa 软件
+    自由的第三方软件，但不保证其安全性，所有的源存放在 launchpad.net 网站中，搜索要安装的软件，点击进去之后会提示在本机使用以下语句添加源
+    sudo add-apt-repository ppa:user/ppa-name   添加 ppa 源，保存在 sources.list.d 目录中，在 ppa: 前面加上 -r 可以删除源
+    sudo apt-get update                         
+    sudo apt-get install ppa-name
+  dpkg
+    -i              通过 deb 包安装软件，常通过 apt-get install -f 来解决依赖问题
+    -l              列出已安装的软件的列表
+  源代码编译
+    configure       根据 makefile.in 模板生成 Makefile 文件，可以使用选项 --prefix= 指定安装的目录
+    make            编译 Makefile 文件
+    make install    安装
+    ldd             系统命令，查看缺少的依赖库
+    ldconfig        系统命令，识别默认位置的动态链接库（lib*，so*），更新 /etc/ld.so.cache 文件，多数软件都是通过这个文件来定位依赖的
+  直接安装
+    有些软件是已经完全打包好了的，只要通过 chmod +x 赋予执行权限就能够进行安装，vmware 和 oracle 就是这样的，当然依赖问题还是要自己解决
+  sources.list 文件的关键字
+    main            Cononical官方软件
+    universe        社区软件
+    multiverse      版权软件
+    restricted      设备驱动
+    security        安全更新
+    backports       无支持更新
+    proposed        预览版更新
+    updates         推荐更新
+
+压缩
+  tar.bz2           压缩率最高，通过 tar -xjvf 解压，通过 tar -cjvf 压缩
+  tar.gz            压缩速度与解压速度最快，通过 tar -xzvf 解压，通过 tar -czvf 压缩
+  zip               在 win 和 linux 都支持的格式，通过 unzip 解压，通过 zip -r 压缩
+
+附
+/etc/apt/source.list	官方软件源
+/etc/apt/source.list.d	PPA软件源 
+/var/lib/apt/lists		从软件源下载的元数据，apt-cache的基础
+/var/lib/dpkg/status	已安装的软件包的信息
+/var/cache/apt/archives	通过apt安装的所有软件包，可以通过clean清理
+apt工具是通过底层的dpkg来进行安装与卸载的，apt的图形界面为synaptic
+使用 zip -d 指定目录，使用 unzip -v 可以查看里面内容
+zip 和 tar 命令的顺序和 cp 等命令的参数位置是反的，target 在前，source 在后
+  zip test.zip test       要压缩的文件放在第二个参数位置
+  tar -cf test.tar test   

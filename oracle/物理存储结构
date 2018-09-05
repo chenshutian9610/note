@@ -1,0 +1,115 @@
+* 数据库分物理存储结构与逻辑存储结构，逻辑存储结构只存在于数据字典中，物理存储结构由在操作系统上的文件组成，
+  重要的组成文件为数据文件，控制文件，重做日志文件，归档文件，初始化参数文件和备份文件等等
+    数据文件        存储数据库中信息
+    控制文件        描述数据库的物理存储信息，即文件位置等等，一般数据库崩溃就是控制文件损坏的缘故
+    重做日志文件    记录用户对数据库的操作
+    归档文件        当重做日志文件切换时将重做日志文件中内容写入归档文件永久保存
+    初始化参数文件  数据库启动时的一些初始化参数，相当于操作系统的用户环境变量
+    备份文件        对数据文件，控制文件等物理存储结构组成文件的备份
+  一般物理存储结构指的是数据文件，控制文件，重做日志文件
+
+* 数据文件，扩展名为 dbf 
+  数据文件依附与表空间存在 datafile
+  临时数据文件存在于临时表空间，是一种特殊的数据文件 tempfile
+    创建，add
+        alter tablespace xxx add datafile|tempfile absolute_filename size xxM
+    修改大小，autoextend ，resize
+        alter database datafile absolute_filename autoextend on next xxx maxsize xxx|unlimited    //  自动
+        alter database datafile absolute_filename resize xxx                                      //  手动
+    修改可用性，只能在归档模式下使用，并且重新联机需要恢复数据文件，offline>recover>online
+        单个数据文件
+            alter database datafile absolute_filename offline
+            recover database absolute_filename      //  恢复数据文件
+            alter database datafile absolute_filename online
+        整个表空间的数据文件
+            alter tablespace xxx datafile offline
+            recover tablespace xxx                  //  恢复表空间
+            alter tablespace xxx datafile online
+    改变数据文件位置，rename ... to 
+        同一表空间, alter tablespace, rename datafile, 需要先设为脱机
+            alter tablespace xxx rename datafile absolute_filename to new_absolute_filename
+        不同表空间, alter database, rename file, 启动数据库到 mount 状态
+            alter database rename file absolute_filename to new_absolute_filename
+    删除数据文件
+        alter tablespace xxx drop datafile absolute_filename
+  添加为 tablespace ，修改为 database 
+  移动同一表空间数据文件 alter tablespace rename datafile to
+  移动不同表空间数据文件 alter database rename file to
+  
+* 控制文件，扩展名为 ctl
+  数据库运行期间，数据文件和重做日志文件的结构变化信息都记录在控制文件中
+  控制文件是二进制文件，所以无法直接修改控制文件
+  oracle 建议最少两个控制文件，并通过多路镜像技术分散到不同磁盘中，当其中一个损坏时不至于系统崩溃
+  控制文件几个重要的最大化参数
+    maxlogfiles         //  重做日志文件组
+    maxlogmembers       //  重做日志文件组成员
+    maxloghistory       //  归档的重做日志文件
+    maxdatafiles        //  数据文件
+    maxinstances        //  可同时访问数据库的实例数量
+  重建控制文件需要知道数据文件和重做日志文件的信息，备份控制文件需要知道控制文件位置
+    select name from v$datafile;
+    select member from v$logfile;
+    select value from v$parameter where name='control_files';
+  重建控制文件步骤，
+    启动数据库到 nomount 状态
+    create controlfile reuse
+        database "oracle"
+        noResetLogs
+        noArchiveLog
+        maxlogfiles 16
+        maxlogmembers 3
+        maxloghistory 292
+        maxinstances 8
+        maxdatafiles 100
+        logfile
+            group 1 absolute_filename size 50M,
+            group 2 absolute_filename size 50M,
+        datafile
+            absolute_filename,
+            absolute_filename
+        character set zhs16gbk
+    recover database;           //  如果指定为 resetlogs ，需要加上 using backup controlfile
+    alter database open；       //  如果指定为 resetlogs ，需要加上 resetlogs
+  备份控制文件
+    alter database backup controlfile to absolute_filename;
+    alter database backup controlfile to trace;     //  保存到跟踪文件中，为文本模式，product/admin/udump
+  设置多路镜像
+    alter system set control_files=absolute_filename,absolute_filename,scope=spfile;
+    //  需要先在操作系统中复制控制文件到指定位置，控制文件在 mount 状态被装载，所以 scope 必须是 spfile
+
+* 重做日志文件，扩展名为 log
+  查询操作不会记录在重做日志文件中
+  一个数据库至少拥有两个重做日志文件组，可以相互切换，切换时产生一个新的系统变更号 scn ，
+  归档模式下将被切换的日志文件写入归档文件，再将所做更改写入数据文件，
+  每个文件组像控制文件一样使用多路径像技术将组中的成员分布在不同的磁盘中，
+  每个重做日志文件至少为 4M
+  添加重做日志文件组
+    创建数据库时    create database xxx logfile group 1(absolute_filename) size 4M,group 2(absolute_filename) size 4M,...
+    数据库已建立    alter database add logfile group 3(absolute_filename,absolute_filename,absolute_filename) size 4M;
+  删除重做日志文件组
+    alter database drop logfile group n
+  清除重做日志文件组内容    当日志文件组中文件发生错误时
+    alter database clear [unarchived] logfile group n
+  添加重做日志文件组成员
+    alter database add logfile member absolute_filename,absolute_filename... to group 3;
+  移动重做日志文件组成员
+    alter database rename file absolute_filename to new_absolute_filename   //  和移动数据文件一样
+  删除重做日志文件组成员
+    alter database drop logfile member absolute_filename
+ 注意：重做日志文件有三种状态，current，inactive，unused。
+      当文件处于 current 时不能操作文件，需要手动切换日志文件后才能操作，alter system switch logfile
+
+* 归档日志文件，扩展名为 arc
+  修改归档日志设置，启动到 mount 状态，然后 alter database noArchiveLog|ArchiveLog ，最后打开数据库完成设置
+  手动归档
+    alter system archive log all;                   //  归档所有 inactive 状态的日志文件组
+    alter system archive log current [on switch];   //  归档当前日志文件组
+  归档目录路径设置，有两种方法设置，只能使用其中一组
+    一，下面方法只能在本地归档，好像很少用
+      alter system set log_archive_dest=absolute_filename scope=spfile;           //  主归档目录
+      alter system set log_archive_duplex_dest=absolute_filename scope=spfile;    //  次归档目录
+    二，下面方法可以在本地也可以在服务器
+      alter system set log_archive_dest_n='location|service=absolute_filename' [optional|mandatory];   
+      //  n 为 1-10 ，后两个参数设置可选归档和强制归档
+  归档进程数目设置 alter system set log_archive_max_processes=3;
+  最小成功归档数量 alter system set log_archive_min_success_dest=3;

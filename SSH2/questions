@@ -1,0 +1,198 @@
+-----2018年 05月 24日 星期四 16:37:51 CST
+--调试了一下午的 struts2 ，一直出错，不能把所有的包（91个）都导入 web-inf/lib 下，错的时候显示过滤器 classnotfound
+× struts2.5.16 与 struts2.3.4
+	1.web.xml 下的 org.apache.dispatcher.ng.filter.StrutsPrepareAndExecuteFilter 中的 ng 被去掉了
+	2.strtus.xml 中增加了 2.5 版本的 dtd 文件，默认情况关闭通配符，使用时需要修改 package 的属性 strict-method-invocation 
+	3.struts2 的 xwork-core 和 struts2-core 被合成一个包
+	4.struts2.5.16 支持 log4j2，标准需要一个 log4j2.xml 文件，也可以不要
+× 第一次发现原来 tomcat 下加载的包太多也会出错
+
+-----2018年 05月 24日 星期四 16:48:05 CST
+× 试验了一下，在 lib 中加载 140 个包无出错，应该是 strtus2.5.16 中有一些包相冲了
+
+-----2018年 05月 24日 星期四 22:26:13 CST
+	<interceptors>
+		<interceptor name="one" class="struts2.interceptors.TestOne"/>
+		<interceptor name="two" class="struts2.interceptors.TestTwo"/>
+		<interceptor-stack name="myStack">
+			<interceptor-ref name="one"/>
+			<interceptor-ref name="two"/>
+			<interceptor-ref name="defaultStack"/>
+		</interceptor-stack>
+	</interceptors>
+× 拦截器和拦截栈必须在 interceptors 中声明
+× 在拦截栈中只能含有引用 ref ，不能声明
+× 上述例子执行顺序为 one-two-defaultStack-action-defaultStack-two-one 
+× 局部使用拦截器在 action 中使用 interceptor-ref 引用 myStack 
+× 全局使用拦截器，在 action 外面使用 default-interceptor-ref 引用（ package 里面 ）
+	@Override
+	public String intercept(ActionInvocation arg0) throws Exception {
+		ActionContext context=ActionContext.getContext();
+		context.getSession().put("one", "zero");
+		String str=arg0.invoke();
+		context.getSession().put("two", "two");
+		return str;
+	}
+× 拦截器需要实现 Interceptor 接口或集成 AbstractInterceptor 类
+× Interceptor 接口需要实现 init，intercept 和 destroy 三个方法
+× AbstractInterceptor 类只需要实现 Intercept，其中 ActionInvocation 型参数的 invoke 方法是重点（返回前一个拦截器返回的 str）
+
+-----2018年 05月 24日 星期四 23:05:50 CST
+× 像上面的拦截器一样，如果要传值的话建议使用 session 模式，如果使用 request ，invoke 方法之后的任何语句不会被识别到
+	context.put("one","zero");
+	String str=arg0.invoke();
+	context.put("two","two");
+	× 使用 ${requestScope.two} 或是 #request.two 获得的 two 都是 null
+× 有时候 tomcat 不是很灵敏，当修改源代码时发现 tomcat 没变化，可以删除 apache-tomcat-8.5.29/work/Catalina/localhost 下的源码
+
+-----2018年 05月 25日 星期五 16:58:15 CST
+× 使用 hibernate5 连接数据库时不能创建表，即使把 hibernate.hbm2ddl.auto 设置为 create 还是一样
+  以为 generator 设置为自然主键才报错，后来改成代理主键模式，还是报错
+  最后在网上查询到 hibernate4 的新特性中 dialect 多了一个 MySQL5Dialect（原来没有 5 ），试了一下，好了
+× 多学到了一句 mysql 的语法，drop table if exists xxx;（使用 create 模式的时候会先删除表）
+
+-----2018年 05月 25日 星期五 22:52:47 CST
+× Student，Course
+× 使用 hibernate5 测试一对多关系时错误连连，以为是版本太新的缘故，结果换成 hibernate3 还是错误
+	× 换成 hibernate3 需要把 struts2 中 asm 包移除掉，不然会相互干扰，并且需要把 dialect 改为 MySQLDialect
+× 总是报错非法参数，student 的 id 的 getter 方法有问题，看了好久，又试着把表和类的所有指同一对象的属性都改成一致，还是错
+  最后发现 Course 类中没有包含 Student 对象！！！而是给了一个 "private int stu_id"！！！偌大的误区
+  stu_id 应该是 Course 对应的表中才有的列，在 Course 必须用 Student 来表示，不然无法体现类与类的关联
+  同理，Student 也要包含 Course 成员，但一般不会出错，因为 Student 是父表，所包含的 Course 只是逻辑上的对应，并没有体现到表中
+  结论：外键列在类中的表现是一个类，在表中是一个字段
+  
+-----2018年 05月 26日 星期六 22:10:04 CST
+× 今天中午试了很长时间的悲观锁，总是行不通，又在 mysql 层次上试了，也是不行，但网上说它支持悲观锁，我就以为是我装的这个坏了
+  晚上，现在的这个时间我又试了悲观锁，还是一直不行，然后我试着在两个并发的语句一起加上 LockMode ，然后就可以了，心态已崩
+  结论，并发的事物必须都要使用 LockMode.UPGRADE ，在数据库的话需要把 autocommit 关了，用 for update 加锁
+  	show variables like 'autocommit';
+  	set autocommit=off;
+  	
+-----2018年 05月 28日 星期一 12:18:18 CST
+× struts2 真的是不能把所有包都导入，比如，导入了一个 strtus-spring-plugin，struts2 创建 action 的主导权就交给了 spring ，
+  这时候如果只使用 struts2 就会出错
+  
+-----2018年 05月 28日 星期一 14:11:42 CST
+× 自定义配置 struts.xml 加载路径，配到想死
+<?xml version="1.0" encoding="utf-8"?>
+<web-app>
+    <filter>
+        <filter-name>testFilter</filter-name>
+        <filter-class>
+            org.apache.struts2.dispatcher.ng.filter.StrutsPrepareAndExecuteFilter
+        </filter-class>
+        <init-param>
+                <param-name>config</param-name>
+                <param-value>struts-default.xml,struts-plugin.xml,config/struts.xml</param-value>
+        </init-param>
+    </filter>
+    <filter-mapping>
+        <filter-name>testFilter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+    
+    <welcome-file-list>
+        <welcome-file>/start.jsp</welcome-file>
+    </welcome-file-list>
+</web-app>
+× init-param 是 filter 自带的，必须放在 filter 里面才能生效
+× param-name 必须是 config（在 struts2 的源码中已定义好了）
+× param-value 是 src 下的相对路径，可以在前面加上 classpath:，也可以省略
+× 如果使用了 config 重新配置加载路径，那么 struts-defaulte.xml 和 struts-plugin.xml 也要重新跟着配置
+（直接写名字，不用路径，因为是从 lib 下的 jar 加载的）
+× 可以在 web-app 下使用 context-param 也能有类似的效果，其 param-name 为 contextConfigLocation 
+× web.xml 中配置的加载顺序是 context-param，listener，filter，servlet
+	在 context-param 中定义的 param-value 可以使用 ${initParam.*} 访问，比如 ${initParam.contextConfigLocation}
+	listener 中使用的类可以是自定义的，但必须继承 ServletContextListener
+× 使用 context-param 配置 struts.xml 路径没成功过，可能因为被 filter 的配置覆盖了
+
+-----2018年 05月 28日 星期一 16:58:35 CST
+							初步搞定 ssh2 整合
+× 使用 spring 管理 action 需要 struts-spring-plugin 包（里面的配置文件会被自动加载）
+× asm 包不要使用 struts2 的，而要使用 hibernate 的
+× 需要 hibernate 的 cglib 包
+× 即使是 spring 管理的 action 也不会自动注入属性，struts2 的自动注入在 spring 这里没用，需要在 action 的 property 手动写入（很关键）
+	<bean id="testAction" class="web.controller.ActionTest" scope="prototype">
+		<property name="service" ref="service"/>
+	</bean>
+	action 类中需要有 setService 方法，注入是需要双方的
+	
+-----2018年 05月 28日 星期一 17:28:03 CST
+							初步注解成功
+× @Transactional 可以对业务类，也可以指定某一个方法
+
+-----2018年 05月 28日 星期一 23:28:28 CST
+× context-param 和 init-param 只能配置 xml 文件，不能配置 properties 文件
+
+-----2018年 05月 28日 星期一 23:55:47 CST
+× 在 spring 中可以使用 spring-context.xsd 的 property-placeholder 来加载自定义配置文件
+	<context:property-placeholder location="classpath:xxx"/>
+× spring 的事务核心为事务管理器，事务容器
+	事务实现可以使用代理，aop 和 annotation（@Transactional），都需要事务管理器
+
+-----2018年 06月 06日 星期三 17:04:57 CST
+× 复习 servlet 时连接不上 servlet（其 pattern 为 /test，form 的 action 为 /test）
+  在 web 应用中配置时 /test 理所应当是 web 目录下的链接
+  但是在 action 中是一个完整的 url ，应该写成 /web/test 或是 ./test 之类的形式
+  直接 /test 就相当于直接访问一个 test 应用，而直接 test 则是相对与当前页面，如果当前页面是 /hello/helloworld.jsp，则访问的是 /hello/test
+× a 标记的 href 和 action 是一样的
+-----2018年 06月 09日 星期六 00:00:54 CST
+一对一外键映射，有两种办法
+	<generator class="foreign">
+    	<param name="property">corporation</param>
+    </generator>
+    × 含 foreign 的对象占主导地位，不然就会出错，因为这一点，使用第二种方法比较容易
+   	× 设置了主键生成为 foreign，就需要指定指向的主对象，corporation 是主键所在的对象，但是只是给一个对象，xml 无法识别这是什么
+   	  所以使用 one-to-one 来说明 corporation 是什么。one-to-one 必须含有 constrained="true"
+    	<one-to-one name="corporation" class="web.beans.Corporation" constrained="true"/>
+    
+    <many-to-one name="corporation" class="web.beans.Corporation" unique="true" column="cor_id" cascade="all"/>
+    × 使用上述语句可以不用指定生成策略为 foreign ，但是需要使用 unique="true" 
+    
+-----2018年 06月 09日 星期六 01:22:09 CST
+× 使用 HibernateTemplate 进行保存操作时，只是在内存中操作，并没有操作到数据库，虽然控制台显示操作成功，一直以为是哪里错了，结果的确是错了，没有进行事务的声明，fuck，在 junit 的 Test 肯定不会想到用 @Transactional 来声明事务，结果就是在用 spring 时可以，用 Test 就不行的情况
+× 如果不连 spring 的话绝对不用 HibernateTemplate，用原版的 session 就好了，必须的
+-----2018年 06月 09日 星期六 14:02:34 CST
+× spring 的 dao 层和 service 层可以不要接口
+× HibernateTemplate 的 find 方法可以用来查询，hql 查询方式
+
+-----2018年 06月 09日 星期六 16:09:50 CST
+× 在 hibernate 中删除对象
+	Member member=new Member("chen");session.delete(member); 或 session.get(Member.class,1);session.delete(member); 都可以
+  在 hibernate 中级联删除对象（cascade=delete）
+  	Member member=new Member("chen");session.delete(member); 会把和该对象有主外键关联的对象相应值设为 null，但不会删除该对象
+  	session.get(Member.class,1);session.delete(member);		 会级联删除
+	！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！
+	符合级联删除条件的必须是从数据库中读取的对象，而不是自创的
+	
+-----2018年 06月 09日 星期六 20:40:45 CST
+* html 的 table
+ 	table 和 tr 里面都不能写文本不能放图
+ 	td 可以写文本也可以放图
+ 	td 可以使用 rowspan 和 colspan 来调整格子的范围已达到调整格子位置的效果
+ 		rowspan，一行相当于其他的几行
+ 		colspan，一列相当与其他的几列
+ 	table，tr，td 可以使用 width 和 height，单位为 % 或 空，空表示单位为 px
+	
+-----2018年 06月 10日 星期日 15:44:14 CST
+* 垃圾 struts2，让我错的生无可恋，action 中的 ActionContext 只能获取在 action 中定义的变量，如
+	假设使用 Map request=(Map)ActionContext.getContext().get("request");
+	然后		request.get("name");
+	如果没有在成员变量中定义和 name 有关的对象，将获取到 null
+	比如 member 对象含有 name ，使用 private Member member 就可以用上述方法获取名称
+	action 的存取值是完全靠值栈的，如果没有实现声明要操作的变量，在值栈中是找不到的
+	靠，
+	public ActionTest extends ActionSupport{
+		public String execute(){
+			Map request=(Map)ActionContext.getContext().get("request");
+			System.out.println(request.get("name"));
+			System.out.println(request.get("sex"));
+		}
+	}
+	获取到的值都是 null，因为没有在成员变量中声明（同时还要赋予 getter 等方法）
+	使用 ActionContext.getContext().get("name")	和 ActionContext.getContext().get("request").get("name") 是不一样的
+
+-----2018年 06月 10日 星期日 16:12:40 CST
+× request.getParameter() 不能获取值栈中的信息，${requestScope.message}和 request.getAttribute("message") 就可以
+× el 表达式可以访问值栈
+

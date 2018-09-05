@@ -1,0 +1,70 @@
+× create {database|schema} [if exists] ${name} 
+  [
+  	[default] character set ${var}
+  	[default] collate ${var} 
+  ]
+  {} 中表示必须的选项，[] 表示可选
+  为了避免创建同名而引发错误，通常会使用 if exists 语句
+  在 mysql 中 database 和 schema 都是指数据库，两者意思完全一样
+  character set 设置编码，可以为 utf8，gb2312 等
+  collate 设置校对规则，可以为 utf8_bin,gb2312_chinese_ci 等，可以通过系统数据库 infomation_schema 来查找具体规则
+ 
+× mysql 默认有四个系统数据库（以前有五个）
+	information_schema		所有数据库对象的信息
+	performance_schema		服务器性能有关的信息
+	mysql					
+	sys
+  × 如果删除了 information_schema 和 mysql 两个系统数据库将无法工作
+  
+× 每次的 set 都是暂时的，数据库重开的时候就会变为原来一样，可以通过修改 mysql.ini(win) 或 mysql.cnf(linux) 来永久设置
+
+× mysql 常用存储引擎
+  InnoDB: 高并发，支持事务，但读写慢，默认引擎
+  MyISAM: 读写快，可分为静态表（不包含 varchar 等数据类型的字段），动态表和压缩表（针对只读表，可实现高速读取）
+  memory: 在内存中的一次性表，和 oracle 的 temporary table 类似，不一样的在于 memory 会保存表结构
+  × 上面三种表建立之后都会产生 frm 文件（存放表结构）
+    数据和索引存储
+     InnoDB  按书中讲是分别存放在 innodb_data_home_dir 和 innodb_data_file_path 表空间中，但事实上会产生一个 idb 文件存储数据
+     MyISAM  会产生 MYD 文件存放数据，MYI 存放索引
+     memory  从头到尾都是存在内存中
+
+× 数据类型							
+	数字									单位(Byte)	
+		bool								1
+		tinyInt							1
+		smallInt						2
+		MediumInt						3
+		int									4
+		bigInt							8
+		float								4/8
+		double							8
+		decimal(n)					任意长度
+	字符串								单位（字符）
+		char(n)							
+		varchar(n)
+		tinyBlob
+		blob
+		mediumBlob
+		longBlob
+		tinyText
+		text
+		mediumText
+		longText
+		enum("","",...)			
+		set("","",...)
+	时间
+		year								两位数字或四位数字，如 08 或 2008
+		date								年月日用 - 隔开，如 2018-1-1
+		time								时分秒用 : 隔开，如 20:10:59
+		datetime						date + time
+		timestamp
+	× blob 为二进制大数据文件，可以存储图片，音乐等，大小级别分别为 tiny~,blob,medium~,long~，分别为 2^(8,16,24,32)-1 Byte
+		text 为单纯的文本文件，大小划分与 blob 一样
+		char 和 varchar 的单位是按字符算的，这两个比较特殊，如'中国'和'zh'存储是一样的空间的
+
+× 常用命令
+  show databases      显示所有数据库，可以使用 like 等进行筛选
+ 	show tables         显示当前数据库的所有表
+  show engines        显示数据库支持的所有存储引擎，因为存储引擎是含有多个字段的，所以一般使用 \G 选项来查看，如 show engines\G
+  show variables      显示数据库所有系统变量，一般使用 like 进行筛选，如 show variables like '%engine%'
+

@@ -1,0 +1,239 @@
+× 使用 jQuery 需要导入 jQuery 的库（一个 js 文件）
+    <script src="jquery3.3.1.js"></script>
+  jquery 以插件的形式添加新的功能模块，常用库如下
+    jQuery UI
+    jQuery easyUI
+    jQuery LigerUI
+    jQuery Mobile
+    AsyncBox                对话框
+    jQuery formValidator    表单验证
+    DataTables              表格
+    Pickadate               日期控件
+
+
+× jQuery 最大的特色就是 $() 函数，其支持四种参数
+    1.选择符，获取与选择符有联系的所有元素，如 $('.ul'),$('#ul')
+    2. BOM 对象，使用这些可以不使用原生的相应对象，如 $(document),$(window)
+    3.标签字符串，创建一个标签，如 $('<p>hello world</p>')
+    4.函数，在文档载入完毕时自动加载，相当于 $(document).ready() 或 load 事件，如 $(function(){...})
+    × 注意，选择符不只 id，class 和节点这三种，具体如下(下面使用 selector 来指代选择符)
+      1.基本选择符
+        id 选择符
+        class 选择符
+        节点选择符
+        通配选择符，如 $('*')
+        并集，使用逗号隔开多个选项，如 $('.ul,#ul')
+      2.层次选择器
+        ancestor descendant     空格分隔，获取祖先节点的所有后代节点，如 $(body p)
+        parent>child            > 分隔，获取父节点的所有子节点，如 $(body>p)
+        element+next            + 分隔，获取 element 节点的下一个节点，如 $(.text+input)
+        element~siblings        ~ 分隔，获取 element 节点后面的所有兄弟节点，如 $(.li~li)
+      3.属性过滤器，装在中括号中，起补充作用
+        [attr]                  返回含有该属性的元素，如 $(a[href])
+        [attr=value]            
+        [attr!=value]
+        [attr^=value]           属性的值以 value 开头
+        [attr$=value]           属性的值以 value 结尾
+        [attr*=value]           属性的值包含 value 
+        [selector][selector]  	多个属性选择器的交集，使用这种方式时元素需要使用 :，如 $('div:[class][title=chen]')
+	  4.简单过滤器（索引值以 0 开始）
+	  	:first					第一个节点
+		:last					最后一个节点
+		:not(selector)			没有包含 selector 的节点
+		:even/odd				索引值为偶数或奇数的节点
+		:eq/gt/lt(index)		等于，大于或小于索引值的节点
+		:header					所有标题节点，如 h，h1，h2 ...
+		:animated				正在执行动画的节点
+	  5.内容过滤器
+	  	:contains(text)			包含指定文本
+		:has(selector)			含有 selector 的节点
+		:parent(非空)			含有子节点或文本节点的节点，如 $('ul:parent') 匹配不为空的 ul 节点
+		:empty(空)				不包含子节点或文本节点的节点，与 parent 相反
+	  6.可见性过滤器
+	  	:hidden
+		:visible
+	  7.子节点过滤器，这个特殊，索引值从 1 开始
+	  	:nth-child(eq|even|odd|index)	每个父节点特定位置的节点（nth 第几个）
+		:first-child					每个父节点的第一个节点
+		:last-child						每个父节点的最后一个节点
+		:only-child						每个父节点的唯一一个节点
+	  8.表单选择器
+		:input					input，textarea，select，注意不只包含 input 节点
+		:button					<input type='button'> or <button>
+		:file					<input type='file'>
+		:image					<input type='image'>
+		:text					<input type='text'>
+		......					其他所有 input 的 type，包括 submit 等。注意 textarea 和 select 不是 input 的 type ，不在此列
+		:enable/disable
+		:checked/selected		checked 针对单选或多选框，selected 针对 <option>
+	× $() 函数虽然会获得多个值，但是无法使用数组的方式来访问，比如 $('li')[3].text() 是错误的，应该是 $('li').eq(3).text();
+	× 从 3 到 7 都是过滤器，意思为对 : 前的元素进行筛选，如 $('li:first-child') 被筛选出来的 li 必须是父节点的第一个孩子节点
+	× $('li:first-child') 和 $('li:first') 的比较
+		<ul>
+			<li>java</li>
+			<li>jsp</li>
+		</ul>
+		<ul>
+			<li>ubuntu</li>
+			<li>centos</li>
+		</ul>
+		$('li:first-child') 匹配每个父节点的第一个节点，得到 java 和 ubuntu
+		$('li:first') 匹配第一个节点，得到 java
+	* :not 和 :has 的比较, not 是针对 class 和 id 属性,而 has 是针对子节点
+		<p id='test'><a>hello</a></p>
+		<p><a id='test'>nihao</a></p>
+		$("p:not('#test')")		//	匹配到第二个
+		$("p:not('a')")			//	匹配到全部,不能识别 p 标签下的 a
+		$("p:has('#test')")		//	匹配到第二个,匹配到 p 标签下带有 #test 的 a
+		$("p:has('a')")			//	匹配到全部,因为两个 p 标记都含有 a
+
+× $() 的筛选函数，和过滤器一样的功能(expr 表示选择符或函数)
+  过滤
+	eq(index)				相当于简单过滤器的 :eq
+	filter(expr)			expr 可以是一个带有 boolean 型返回值的函数，如 $('p').filter(function(){return $(this).hasClass('x');})
+							是 :not 的相反,是筛选 class 和 id 属性的,和 has(selector) 不一样
+	not(expr)				相当于简单过滤器的 :not
+	slice(start[,end])		start 和 end 为索引值，用来截取范围
+  查找
+	add(expr)				相当于并集选择符，$('#id,.class') 等同于 $('#id").add('.class') 
+	children([expr])		相当于 parent>children，$('ul>a') 等同于 $('ul').children('a')
+	find(expr)				相当于 ancestor descendant，$('ul a') 等同于 $('ul').find('a')
+	contents()				...
+	next/nextAll([expr])	当不使用 expr 时，相当于 element+next 或 element~next 
+	prev/prevAll([expr])	和上面相反
+	siblings([expr])		上面两种的和
+	parent([expr])			共同的父节点，当直接父节点不匹配则尝试第二层的父节点，一个父节点为湖南，一个为湖北，这两个节点的共同父节点为中国
+  串联
+	andSelf()				x.next().andSelf()	//	x 与 x.next()，这个方法已经被取消了，略作了解就行
+	end()					x.next().end()		//	x 
+
+
+× 样式控制函数
+
+---------- 样式
+  css，有三种使用方式						
+	1.当 css 方法含有两个字符串参数时，第一个为要设置的属性，第二个为属性的值，如 $('body').css('color','red');
+	2.当 css 方法只有一个字符串参数时，返回相对应的属性的值，如 $('body').css('color');
+	3.当 css 方法中是一个对象变量时，可以实现多属性设置，如
+		var myStyle={			
+			height:'40px',		/*	注意在 html 中设置样式和这个的格式不一样，
+			color:'red',		 *	css 的属性分隔是通过分号，这里样式被当成对象变量，所以是逗号，且属性值使用引号括起来
+			width:'100px',		 */
+		};
+		$('body').css(myStyle);	//	下面的 attr 也有这种形式,但要注意 attr 的对象参数中不能含有 color 等 css 属性,因为无效
+
+---------- 位置
+  offset()				返回一个对象变量，{top,left}，获取节点在窗口的相对偏移，如 alert($('p').offset().top);
+  position()			和 offset 类似，获取节点相对父节点的偏移
+  scrollTop([val])		无参时返回节点相对滚动条顶部的偏移，有参时设置偏移，val 为整型
+  scrollLeft([val])		同上
+
+---------- 尺寸
+  height([val])			获取或设置高
+  width([val])			获取或设置宽
+  innerHeight()			
+  innerWidth()			
+  outerHeight(bool)		bool 为 false 时为内部 outer，为 true 时为外部 outer
+  outerWidth(bool)
+  × 在网页中，最外层为 margin，接着是 border，然后是 padding，最后才是节点显示的区域
+    用高度来举例
+		outerHeight(true)		margin 的高度
+		outerHeight(false)		border 的高度
+		innerHeight()			border 的高度减去垂直厚度，即 border 的内高度
+		height()				element 的高度，与 border 内高度的差为 padding 的区域
+
+---------- Class 属性设置（下面的 class 是不包含 . 的名称）
+  hasClass(class)				判断是否含有 class 类选择符
+  addClass(class)				添加 class，当有多个时用空格隔开
+  removeClass([class])			无参时移除全部，有参时移除 class，class 为多个时一样用空格隔开
+  toggleClass(class)			如果没有 class 则添加 class，如果有则移除，像开关一样切换
+
+---------- 动画函数，可以使用参数来控制时间，单位为毫秒，比如 show(1000)
+  	show/hide()							显示或隐藏动画，可以使用预定义的参数 slow，normal 和 fast 来控制间隔，分别为 600,400,200
+	fadeIn/Out()						淡入淡出
+	slideDown/Up()						滑入滑出，down 是从上往下显示，up 是从下往上消失，show 和 hide 就是左右方向的显示和消失
+	animate(style,speed,callback)		自定义动画，style 为一个对象变量，用来设置 css，callback 为动画结束时执行的函数 
+	stop()								将第一个的动画设为等待
+	is(':animate')						是否处于动画状态
+	toggle(speed,callback)				在 show 和 hide 之间来回切换，可以设置速度和回调函数
+	slideToggle(speed,callback)			在 slideDown 和 slideUp 之间来回切换
+	fadeTo(speed,opacity,callback)		淡入到某一透明度
+
+
+× jQuery 式的 DOM 操作
+
+---------- 属性操作
+  attr，有四种使用方式
+	1.attr(name)			返回指定属性的值，如 $('body').attr('color')
+	2.attr(name,value)		设置指定属性的值，如 $('body').attr('color','red')
+	3.attr(name,function)	通过函数的返回值来设置属性的值，如 $('body').attr('color',function(){return 'red'})
+	4.attr(obj)				把多个属性的设置包装成一个对象，通过这个对象来设置属性，如
+							var obj={
+								width:'600px',
+								border:'1',
+								color:'green',						//	错误,object 和 css 格式差不多,但意义差很多
+								style:'color:red;font-size:20px'	//	正确
+							};
+							$('table').attr(obj)
+
+---------- 文本操作
+  html		读写 innerHTML
+  text		读写 innerText
+  val		读写表单的 value
+
+---------- DOM 树操作
+  append/prepend				插入到最后或最前，如 $('body').append($('<p>nihao</p>'))
+  appendTo/prependTo			和上面一样，但方向颠倒，如 $('<p>nihao</p>').appendTo($('body'))
+  after/before					插入到后面或前面，如 $('li:first').after('<li>jsp</li>')
+  insertAfter/insertBefore		在原生 DOM 中也有一个 insertBefore 方法,效果是一样的,但是使用方式很不一样
+								DOM 中		parent.insertBefore(new,child)
+								jquery 中	child.insertBefore(parent) 
+  remove()						删除节点，返回值是被删除的节点，可以用来删除或移动节点，如 $('body').append($('p').remove())
+  empty()						清空节点，被清空的节点只剩下一个标签
+  clone()						节点的克隆
+  replaceWith					用后面的节点替换前面的节点，如 $('p').replaceWith('<pp>nihao</pp>')，pp 替换掉 p
+  replaceAll					和上面一样，单方向颠倒，如 $('<pp>nihao</pp>').replaceAll('p')，和上面语句一样作用
+  wrap/wrapAll/wrapInner(tag)	tag 为标签，可以是'<p></p>'也可以是 document.createElement('p')
+								wrap:		$('a').wrap('<p></p>')							<p><a>hello</a></p>
+								wrapInner:	$('a').wrapInner(document.createElement('p'))	<a><p>hello</p></a>
+  × append 和 after 的区别，append 中被操作的是父节点，而 after 是兄弟节点
+  × remove，empty 和 clone 无参
+
+
+× jQuery 式的事件操作
+  ready(func)				
+  	用于替代 load 事件，使用时要求不定义文件的 load 事件，否则 ready 函数不会执行
+	$(document).ready(function(){alert('hello')}) 可以简写为 $(function(){alert('hello')})
+  bind(type[,data],func)
+	给节点绑定事件，type 为事件类型，data 可以传送额外信息（data 是一个对象变量，通过 event.data 可获取），func 为事件处理函数
+	$('p').bind('click',{x:6},function(event){alert(event.data.x)})
+  one(type[,data],func)
+	和 bind 一样的作用，但它是一次性的
+  unbind([type][,func])(不能解绑在标签属性中定义的事件)
+	无参时解绑所有事件，含有 type 时解绑 type 指定的事件，含有 func 只解绑函数
+  hover(over,out)
+	over 和 out 都是函数，一个是当鼠标悬停在节点上时被触发，一个是当鼠标离开节点范围时被触发
+  toggle(func,func)
+	在老版的 toggle 中可以接受两个以上的函数，效果是按函数顺序切换
+	在新版的 toggle 为节点的开关 : 当没有参数时,toggle 为无动画开关 ; 当含有参数时(只能有一个,并且是函数),为有动画开关
+	$('p').toggle(function(){$(this).css('color','red')})	点一次变成红色，再点一下消失，再点一下显示红色 ...
+
+---------- 常用事件处理函数，可以代替 bind 和 one，无参时触发事件，有参时绑定函数（参数必须是函数!!!!!!!!!!!!!!!!!）
+  blur/focus		$('p').blur() 焦点消失，$('p').blur(function(){alert('blur')}) 绑定函数
+  click/dblclick
+  ......			所有事件都有相应的处理函数，注意都是小写，如 mousedown 等
+
+---------- 阻止事件冒泡
+  event.stopPropagation();		阻止事件冒泡，不能用在 submit 上
+  return false;					不仅阻止事件冒泡，还阻止了事件本身,相当于 stopPropagation + preventDefault
+	$(':text').mousedown(function(){return false;})		//	不管怎么点文本框都不会被选中
+
+
+× Ajax，asychronous javascript and xml（未成功过，不会用）
+  一般通过简单 $.get() 和 $.post() 就可以完成最简单的 ajax 操作
+  可以通过 $.ajax() 获得 XMLHttpRequest 对象，一般只有需要操作底层的时候才会用到
+	$.get('data.txt').success(function(content){
+		var s=content.split(',');			
+		for(var i=0;i<s.length;i++)
+			alert(s[i]);
+	})

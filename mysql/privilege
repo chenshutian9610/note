@@ -1,0 +1,12 @@
+× 每次更改和权限有关的数据时要手动刷新，flush privileges 或是在操作系统中使用 mysqladmin reload
+
+× 设置密码
+	set password for '${user}'@'%'=password('${pwd}');	
+		× 如果是给当前用户修改可以省略 for 语句
+		× password() 函数是用来加密密码的，因为 mysql 的密码是加密保存的，如果没有使用这个函数，登录会失败（如果密码为空可以不使用这个函数）
+	grant usage on *.* to '${user}'@'%' identified by '${pwd}'
+		× 使用 identified by 会自动加密，所以不用使用 password() 函数
+		× usage 表示无权限
+	create user ${user} identified by '${pwd}'
+
+× 授予权限 grant，撤销权限 revoke	

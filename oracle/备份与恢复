@@ -1,0 +1,139 @@
+* 数据库的备份与恢复 backup&recover ,主要针对介质故障,可分为:
+    管理员手动备份与恢复    
+        物理备份与恢复  备份可分为冷备份与热备份,热备份需要处于归档模式
+            完全备份与恢复  需要处在归档模式下,通过某一时间点的备份恢复,然后通过归档文件和重做日志文件进行前滚,通过回滚段回滚未提交的事务
+            部分备份与恢复  
+        逻辑备份与恢复  
+            通过 export 与 import 进行
+            通过 expdp 与 impdp 进行
+        数据库以物理备份为主,逻辑备份为辅,因为逻辑备份需要数据库处于打开状态
+    RMAN 自动备份与恢复
+
+* 管理员手动备份与恢复
+  备份物理文件可以直接在操作系统中复制移动,也可以通过使用 " host copy 源文件 目标文件 " 语句进行
+  备份可分为冷备份与热备份
+    冷备份,即关闭数据库后的备份
+    热备份,即数据库状态为打开时的备份,需要处于归档模式
+        备份表空间
+            alter tablespace users begin backup;
+            host copy d:\users01.dbf d:\backup\user01.dbf       //  文件的名字最好是一样的
+            alter tablespace users end backup;
+        备份控制文件
+            alter database backup controlfile to 'd:\control.bkp'; / alter database backup controlfile to trace
+        备份归档日志文件,一般需要先把重做日志文件归档
+  恢复可分为非归档模式的恢复与归档模式的恢复
+    非归档模式,可分为三个级别,分别是数据库级别,表空间级别和数据文件级别,对应 recover database | tablespace xxx | datafile xxx
+        恢复数据库  需要重开数据库,也可用于单独恢复表空间和数据文件
+            1. shutdown abort 
+            2. 操作系统层次上替换损坏文件
+            3. startup mount
+            4. recover database|tablespace xxx|datafile xxx
+            5. alter database open;
+        恢复表空间
+            1. alter tablespace offline for recover
+            2. 操作系统层次上替换损坏的数据文件
+            3. recover tablespace xxx
+            4. alter tablespace online
+        恢复数据文件
+            1. alter database datafile 'd:\users01.dbf' offline;
+            2. 操作系统层次上替换损坏的数据文件
+            3. recover datafile 'd:\users01.dbf' offline;
+            4. alter database datafile 'd:\users01.dbf' online;
+    归档模式
+        完全恢复的过程与非归档模式的一样
+        不完全恢复,即恢复数据库到某一时刻,需要使用 resetlogs 来重置日志文件,可以通过时间,撤销或 SCN 的方式来进行(until time xxx|cancel|change xxx)
+            1. shutdown abort
+            2. 操作系统层次上替换损坏的数据文件
+            3. startup mount
+            4. recover database until time xxx|cancel|change xxx [using backup controlfile];
+            5. alter database open resetlogs;
+        因为备份的控制文件只有到某一时刻的修改,使用备份的控制文件来恢复需要在 recover 最后加上 using backup controlfile 告诉数据库使用的是备份
+  逻辑备份
+    export/import 方法比较老,一般使用 expdp/impdp 方法(数据泵技术)
+    逻辑备份要求数据库处于运行状态,同时因为需要将文件导出为转储文件,所以需要创建目录对象
+    expdp/impdp 相对应的转储文件扩展名为 dmp
+    数据泵关键字
+        directory   
+        dumpfile
+        logfile                 指定导入导出日志文件
+        nologfile               是否不生成导入导出日志文件,默认为 no ,即生成
+        remap_schema            重定位到别的模式, xxx:xxx
+        remap_tablespace        重定位到别的表空间 xxx:xxx
+        job_name                指定作业名
+        query                   指定导出的对象中的数据,没指定导出全部, 对象名:"筛选语句" , info:"where name='chen'"  
+        include                 指定导出的对象,没指定导出全部, 对象类型:"筛选语句" , table:"like free_%"
+        parfile                 指定参数文件
+        transport_full_check    指定是否检查导出的表空间的约束
+        network_link            指定数据库链接
+        至少有四个 directory,nologfile|logfile,dumpfile,mode
+    数据泵有五种导入导出模式 mode
+        全库        full=yes
+        模式        schemas=xxx,xxx,...
+        表          tables=xxx
+        表空间      tablespaces=xxx
+        传输表空间  transportable_tablespaces=xxx   数据库之间表空间的传输
+    数据泵有三种使用方式,都是在命令行中进行, impdp 与 expdp 语法一样
+        命令行
+            create directory dir as 'd:\dump';
+            grant read,write on directory dir to scott;
+            expdp scott/tiger 
+                directory=dir 
+                dumpfile=full.dmp 
+                nologfile=yes 
+                job_name=scott_job
+                tablespaces=users
+                query='info:"where id=3"'
+                remap_tablespace=users:users2
+        参数文件
+            1. 首先创建一个 parameters 文件,内容如下:
+                transport_tablespaces=users
+                dumpfile=tramsportTBS_mode.dmp
+                nologfile=yes
+                directory=dir
+                include=table:"in('info','info2')"
+                network_link=free_link
+            2. expdp scott/tiger parfile=parameters
+        交互方式
+            在执行导出时按 ctrl+c 进入交互,常用 stop_job=immediate
+
+* RMAN
+    创建恢复目录数据库  
+        1. 登录数据库
+        2. create tablespace catalog_tbs datafile 'd:\data\tbs01.dbf' 100M
+        3. create user free identified by freedom default tablespace catalog_tbs;
+    进入 rman 中并分配通道
+        rman /
+        configure default device type to disk;
+        configure device type disk parallelism 2;
+        configure channel 1 device type disk format'd:\backup1\backup%U';    //  %U 代表从1-99
+        configure channel 2 device type disk format'd:\backup2\backup%U';
+        configure controlfile autobackup on;
+    连接目标数据库      connect target scott/tiger@oracle
+    连接恢复目录数据库  connect catalog free/freedom@oracle         
+    备份语法
+        backup database|tablespace xxx|datafile xxx plus archivelog format'd:\backup\%U';
+        backup current controlfile fromat'd:\backup\%U.ctl';
+        backup spfile format'd:\backup\spfile%U';
+        backup archivelog all;
+    恢复语法
+        完全恢复
+            数据库
+            1. shutdown immediate;
+            2. startup mount;
+            3. restore database;
+            4. recover database;
+            5. alter database open;
+            表空间或数据文件
+            1. sql"alter database datafile xxx|tablespace xxx offline";
+            2. restore datafile xxx|tablespace xxx;
+            3. recover datafile xxx|tablespace xxx;
+            4. sql"alter database datafile xxx|tablespace xxx online";
+        不完全恢复
+            3. run{
+                set until time xxx|scn xxx|sequence xxx;
+                restore database;
+                recover database;
+            }
+            4. alter database open resetlogs;
+
+

@@ -1,0 +1,209 @@
+× 事件名都为小写
+× BOM，浏览器对象模型，包括以下对象
+    window
+    × 在 javascript 中 window 对象相当于 ECMAScript 标准中的 Global 对象，拥有全局访问功能
+        var str='hello';
+        document.write(window.str);
+    × 所有其他 BOM 对象都是 window 对象的子对象，如 location 的全称为 window.location
+    × window 对象提供三种系统对话框，分别对应 alert，confirm 和 prompt 方法
+        alert('hello world');                           //  弹出字符串
+        if(confirm('do you want it?')) ... ;            //  返回一个 boolean 类型的值，对应 ok 和 cancel 两个按钮
+        var str=prompt('please input your name','');    //  返回一个 String 类型的值，对应文本框中的内容，第二个参数为文本框的初始 value
+    × javascript 是单线程语言，所以可以设置 timeout 和 interval 来调度代码的执行
+        setTimeOut(cmd,time)    //  time 为毫秒（不管是代码还是函数，最好都用引号围起来，不然个别浏览器无法识别）
+        clearTimeOut(id)        //  清除 timeout，id 为 setTimeout 的返回值
+        setInterval(cmd,time)    
+        clearInterval(id)
+    × 使用 open 方法可以用来打开窗口，open 含有三个参数，分别为 url，target，setting
+        open('page.html');                                  
+        open('http://www.baidu.com','baidu');               //  相当于 <a href="http://www.baidu.com" target="baidu"/>
+        open('../page.html','page','width=400,height=100');
+        × url 可以为绝对路径（http://），也可以为相对路径（../），直接写名字代表（./）
+        × target 为窗口的 name，如果存在则重载，不存在则创建一个新窗口
+        × 内置的 target 对象有 self,parent,top,blank（打开一个空白窗口）
+        × setting 除了 width 和 height 还有 toolbar,menubar,scrollbars,resizable,location,status 等，取值为 yes 或 no 
+		  多个属性时用逗号隔开。但是这些属性出于安全考虑已经使用不了了
+    location
+    × location 是最常用的 BOM 对象之一，常用来将 url 地址分割为多个片段
+        常用属性(以 http://127.0.0.1::8080/start.jsp?id=5&name=chen#first 为例)
+            protocol    http:
+            hostname    127.0.0.1
+            port        8080
+            pathname    /start.jsp
+            search      ?id=5&name=chen
+            hash        #first
+            host        127.0.0.1:8080(hostname+port)
+            href        url 的全名
+        常用方法
+            assign(url)     转到其他页面，可以通过后退回到原来的页面，location='page.html' 相当于 location.assign('page.html')
+            replace(url)    取代当前页面，没法通过后退回到原来的页面
+            reload(bool)    bool 默认为 false，意为从浏览器中进行重载，当为 true 时表示从服务端进行重载
+    navigator
+    × 使用属性来获取浏览器信息
+        cookieEnabled   //  浏览器是否打开 cookie
+        platform        //  浏览器所在的平台，如 linux x64_86
+        onLine          //  浏览器是否联网
+        userAgent       //  浏览器完整的代理信息
+    screen
+    × 使用属性来获取电脑屏幕的属性，如 1366*768 之类
+        width       
+        height
+        colorDepth  //  屏幕颜色深度
+        pixelDepth  //  像素的位元数，和 colorDepth 的结果一样
+    history
+    × 保存用户的历史记录，拥有 length 属性，常用方法如下
+        go(n)       n 为正则前进 n 个页面，n 为负则后退
+        go(url)     跳转到最近的 url 页面（可能是前进的也可能是后退的）
+        forward     前进一个页面
+        back        后退一个页面   
+    document
+    × 用来查找与访问 DOM 对象，java 的 DOM 解析主要针对 xml，javascript 主要针对 html，实际上两种的 DOM 是一样的
+    × 查找节点
+      原始查找方法
+        getElementById          通过标签的 id 属性获取节点
+        getElementsByTagName    通过标签名获取节点，返回一个类似数组的对象，不能使用 for-in 方法来遍历          
+      选择符 API，通过 CSS 选择符来获取节点（CSS 选择符即标签名，# 和 . ）
+        querySelector           返回第一个匹配到的节点
+        querySelectorAll        获取匹配到的所有节点，返回一个数组，一样不能用 for-in 遍历
+      父子兄弟节点查找方法，常用属性如下
+        childNodes          子节点数组，这个是属性，不是方法
+        firstChild          第一个子节点
+        lastChild           最后一个子节点
+        parentNode          父节点
+        previousSibling     前一个兄弟节点
+        nextSibling         下一个兄弟节点
+        nodeValue           节点内容，指的是文本节点的内容，如果是标签节点，则返回 null
+        nodeName            节点名称，标签节点返回标签名，文本节点返回 '#text'，nodeName 和 nodeValue 是一起使用的
+							if(element.nodeName=='#text')
+								document.write(element.nodeValue);
+										文本节点
+										/
+								标签节点
+										\
+										属性节点
+            比如有 html 部分代码如下
+                <ul>
+                    <li>jsp</li>
+                    we are ignored
+                    <li>java</li>
+                    <li>spring</li>
+                    <li>struts2</li>
+                    <li>hibernate</li>
+                </ul>
+				<script>
+                var ul=document.querySelector('ul');
+                var list=body.childNodes;
+                for(var i=0;i<list.length;i++){
+                    var element=list[i];                                    
+                    if(element.nodeName!='#text'){                          
+                        document.write(element.nodeName.toLowerCase+' ');  
+                        document.write(element.firstChild.nodeValue+'<br>');
+												// 上面的语句相当于 document.write(element.innerText+'<br>');
+                    }
+                }
+				</script>
+                × 如果没有使用 if(element.nodeName!='#text') 来筛选掉文本节点，
+				  当文本节点遇到 element.firstChild.nodeValue 就会报错
+                × ul 下的文本节点不只 'we are ignored' 这一句，每一个回车都为一个文本节点
+                    <ul>
+                        <li>hello world</li>
+                    </ul>
+                    遍历节点名称输出为 #text LI #text
+    × 操作节点
+      操作属性
+        1.节点直接读写属性，但只能读取标准属性，如 
+					table.width='200'		//	正确
+					table.height='100'	//	错误
+        2.节点的 get/setAttribute 方法，可以读取节点的标准属性和非标准属性，算是对第一种方法的补充
+            var element=document.getElementsByTagName("table")[0];
+            with(document){
+                write(element.width);                       //  得到节点的 width 值
+                write(element.height);                      //  得到 undefined，因为 height 不是 table 标记的标准属性
+                write(element.getAttribute("height"));      //  得到节点的 height 值
+            }
+                element.width=600;                          //  设置 width
+                element.setAttribute("height","200");       //  设置 height，两个参数都为字符串格式
+      操作文本，通过以下常用属性
+        innerHTML                   //  读写元素内容
+        innerText/textContent       //  这两种属性是一样的，读写节点的纯文本内容
+        × innerHTML 和 innerText 读的时候是一样的，都是获取节点的所有文本内容，
+          写的时候 innerHTML 能够识别标记，而 innerText 只是简单的当成纯文本，如下
+            var element=document.querySelector("li"))；
+            with(document){
+                write(element.innerHTML="<br>";             //  输出回车
+                wirte(element.innerText="<br>";             //  输出<br>
+            }
+      操作节点
+        createElement               //  创建空的一个元素节点（标记节点）
+        createTextNode              //  创建一个文本节点
+        appendChild                 //  将节点追加到某一父节点之下
+        insertBefore                //  含有两个参数，一个是要插入的节点，一个是指定要放在哪个节点前面
+        removeChild                 //  删除节点
+        × 前两个方法是 document 对象调用，后面三个方法是父节点调用
+        × 如果创建一个节点后没有插入到一个位置，此节点无法被显示
+        × document 提供一个 writeln 的方法，但是和 jsp 的 println 是一个作用的，没什么用
+            var parent=document.querySelector("ul");        //  获取第一个 ul 标记
+            var child=document.querySelector("li");         //  获取第一个 li 标记
+            a=document.createElement("a");                  //  创建一个 a 标记
+            a.href="www.baidu.com";
+            a.innerHTML="hello world";
+            text=document.createTextNode("hello china");    //  创建一个文本节点
+            a.appendChild(text);                            //  将文本节点追加到 a 标记最后
+            parent.insertBefore(a,child);                   //  将 a 标记插入到 li 标记前面，这一步很重要
+            parent.removeChild(a);                          //  删除 a 标记
+    
+× BOM 的事件处理，事件名都是小写，即使是由多个单词组成，如 mousedown
+
+---------- 注册事件处理程序
+    1.在标签中，如 <input type="button" onclick="func()"/>
+    2.在 script 中使用节点的事件属性，如 document.getElementById('in').onclick=function(){......};
+    3.通过节点的 addEventListener 方法来绑定，方法含有三个参数，分别是事件类型，函数名，boolean（一般为 false，安全且兼容）
+	  使用 removeEventListener 来解绑（只需要前两个参数）
+        element.addEventListener('click',func,false);
+    4.win IE8 及之前版本的处理方法，通过节点的 attach/detachEvent 来实现绑定与解绑，
+	  这两个方法只能支持事件冒泡，相当于没有 boolean 参数的 addEventListener ，过时已不用
+        element.attachEvent('click',func(){...});
+    5.跨浏览器处理，通过 jQuery 消除浏览器之间的差异
+  × 最常用的是 1，2 和 5，注意如果在 script 中绑定事件，则 script 标签必须在节点之后声明
+  
+---------- 事件处理程序的调用
+    × 事件对象，当触发 DOM 上的某个对象时会产生一个事件对象 event，其会包含触发时的所有状态信息，如果是鼠标触发则返回鼠标当前位置之类等信息
+      老的浏览器在调用时不会传递事件对象，需要手动使用 window.event 来获取事件对象
+    × 事件调用顺序，标签绑定 = 节点属性绑定 > addEventListener > attachEvent
+    × 事件传播，有三种，事件冒泡，事件捕获和 DOM 事件流，事件冒泡比较老，兼容性最好，所以一般使用事件冒泡方式
+		事件冒泡，从事件发生的位置沿着 DOM 树逐级向上，直到 document 对象
+		事件捕获，与事件冒泡的顺序相反		
+        DOM 事件流，同时支持以上两种模型，事件捕获先发生，事件冒泡在后
+	  举例
+		<html onclick='alert("html")'>
+		<body onclick='alert("body")'>
+		<ul onclick='alert("ul")'>
+			<li onclick='alert("li")'>hello</li>
+		</ul></body></html>
+		假设点击了 li 标签
+		* 事件冒泡执行顺序为 li -> ul -> body -> html -> document
+		* 事件捕获执行顺序为 document -> html -> body -> ul -> li
+		* DOM 事件流为 document -> html -> body -> ul -> li -> ul -> body -> html -> document
+		  注意中间的 li 只经过一次，而 li 只能算在事件捕获或事件冒泡过程中的一种
+		  addEventListener 方法中最后一个参数为 false 则中间节点算为事件冒泡，一般为 false，事件冒泡兼容性好
+		  
+---------- 事件类型，浏览器主要规定了一下几种类型的事件
+    × UI 事件
+        load/unload     最常用为 load，在完全加载完页面或是图片之后触发的事件，使用时需要加上 on（onload），下同
+        abort
+        error
+        select          选择文本框中的文本时触发
+        resize
+        scroll
+    × 焦点事件
+        focus           得到焦点时出发
+        blur            该事件不会冒泡，所有浏览器都支持，当失去焦点时触发
+    × 鼠标事件
+        click
+        dblclick
+        contextmenu     上下文菜单
+        mouseup/down/move/over/out
+    × 滚轮事件
+    × 键盘事件和文本事件
+        keypress/up/down    按住的话会持续触发，可以使用 keyCode 获取输入的 ASCII 码
+        input           	在 DOM3 级事件中引入，当在文本框中输入有显示的数据时触发，ctrl 这些则不会

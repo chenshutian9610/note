@@ -1,0 +1,71 @@
+{
+	"HTML template": [{
+		"prefix": "html",
+		"body": [
+			"<!DOCTYPE html>",
+			"<html>",
+			"<head>",
+			"\t<meta charset=\"utf-8\" />",
+			"\t<meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\">",
+			"\t<title>${1:Page Title}</title>",
+			"\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">",
+			"\t<link rel=\"stylesheet\" type=\"text/css\" media=\"screen\" href=\"${2:main.css}\" />",
+			"\t<script src=\"${3:main.js}\"></script>",
+			"</head>",
+			"<body>",
+			"\t$0",
+			"</body>",
+			"</html>"
+		],
+		"description": "Simple HTML5 starting point"
+	},
+	{
+		"prefix":"struts2",
+		"body":[
+			"<!DOCTYPE struts PUBLIC",
+			"\"-//Apache Software Foundation//DTD Struts Configuration 2.3//EN\"",
+    		"\"http://struts.apache.org/dtds/struts-2.3.dtd\">",
+			"<struts>",
+			"\t$0",
+			"</struts>"
+		],
+		"description":"struts2.xml"
+	},
+	{
+		"prefix":"xml",
+		"body":"<?xml version=\"1.0\" encoding=\"utf-8\"?>\n",
+		"description":"xml"
+	},
+	{
+		"prefix":"hbm",	
+		"body":[
+			"<!DOCTYPE hibernate-mapping PUBLIC ",
+		    "\"-//Hibernate/Hibernate Mapping DTD 3.0//EN\"",
+		    "\"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd\">",
+		    "$0"
+		],
+		"description":"hibernate.hbm.xml"
+	},
+	{
+		"prefix":"cfg",
+		"body":[
+			"<!DOCTYPE hibernate-configuration PUBLIC",
+			"\"-//Hibernate/Hibernate Configuration DTD 3.0//EN\"",
+			"\"http://hibernate.sourceforge.net/hibernate-configuration-3.0.dtd\">",
+			"$0"
+		],
+		"description":"hibernate.cfg.xml"
+	},
+	{
+		"prefix":"spring",
+		"body":[
+			"<beans xmlns=\"http://www.springframework.org/schema/beans\"",
+	       	"\txmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"",
+       		"\txsi:schemaLocation=\"",
+			"\t\thttp://www.springframework.org/schema/beans",
+			"\t\thttp://www.springframework.org/schema/beans/spring-beans.xsd\">\n"
+		],
+		"description":"spring.beans"
+	}
+	]
+}

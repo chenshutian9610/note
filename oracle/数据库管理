@@ -1,0 +1,228 @@
+* 模式
+    用户能以三种身份登陆
+        normal  默认，进入同名模式
+        sysdba  进入 sys 模式
+        sysoper 进入 public 模式
+    注意：不同的模式创建的数据库对象存储在该模式中，如果要使用其他模式创建的对象需要 user.object 格式
+
+* 表中的约束
+    约束有五种类型，同时可分为表级约束和列级约束，删除约束时一般带有 cascade
+        primary key
+        foreign key
+        unique
+        check
+        [not]null
+    修改表的约束
+        alter table xxx add constraint xxx ...
+		alter table xxx modify xxx [not] null		设置空与非空的约束比较特别，因为这个属性原来已经有了，只能修改不能添加
+        alter table xxx drop (constraint xxx|直接指定约束，如 unique(id)，primary key)
+        alter table xxx enable|disable (constraint xxx|直接指定约束)
+        删除或禁用主键或唯一性约束时会连同其索引一起删除，如果要保留索引，在最后加上 keep index，如果该约束被外表引用，则还需在最后加上 cascade
+        删除表或是表中的列时如果有外表约束则在最后加上 cascade constraints
+
+* 表
+  创建表
+    create [global temprary] table xxx     //  临时表或永久表
+    (column_name    data_type   column_constraint,
+     ...
+     table_constraint)                      //  表级约束
+    [parameter_list]                        //  指定表空间即存储参数
+    [on commit delete|preserve rows]        //  临时表特有，delete 为事务级，preserve 为会话级
+    [as subquery]；                         //  利用子查询填充
+    
+    create table info
+    (id     varchar2(10)    primary key,
+     name   char(8)         not null, 
+     sex    char(2)         not null,
+     class  char(8)         not null,
+     constraint fk_info foreign key(class) references information(class),
+     constraint ck_info check(sex in('男','女'))
+     using index tablespace index storage(initial 64K next 64K) //  为主键设置索引的存储参数和表空间
+     )
+     tablespace users 
+     pctfree 10 pctused 40 
+     storage(initial 500K next 50K maxextents 10 pctincrease 25)//	第一个分区500，第二个50，第三个62.5。。。最多只能有十个区
+
+    表参数设置
+     tablespace 指定表空间
+     storage    指定存储参数，如果不指定则继承表空间默认的存储参数
+        当区管理方式为本地自动分配时可以设置 initial，next，minExtents 三个参数
+        当区管理方式为本地定制分配时不可以设置
+     data_block  
+        pctfree
+        pctused
+        iniTrans    //  初始并发访问数
+        maxTrans    //  最大并发访问数
+     logging|nologging   创建表时如果同时插入大量数据建议使用 nologging ，操作不会记录到重做日志文件，速度快
+  修改表
+    alter table xxx add(...)                                                    //  添加列
+    alter table xxx modify column_name data_type                                //  修改列类型
+    alter table xxx rename column old to new                                    //  修改列名
+    alter table xxx drop column column_name [cascade constraints]               //  删除列，删除多列需要括号并且不要 column 关键字
+    alter table xxx set unused column column_name [cascade constraints]         //  禁用列，删除多列需要括号并且不要 column 关键字，不可逆
+    alter table xxx drop unused columns                                         //  删除所有被禁用的列
+  表重构
+    表中产生大量空间碎片或行迁移等不合理存储现象时，将一个表移到另一个数据段，再删除原表，这样 rowid 会改变，所以原表的索引需要重建
+    alter table xxx move                    //  在当前表空间中
+    alter table xxx move tablespace xxx     //  移到别的表空间
+  表重命名
+    alter table xxx rename to xxx
+    rename xxx to xxx
+    注意：重命名后与表关联的对象都将失效，需要重新编译，所以不建议
+  添加注释
+    comment on table xxx is xxx
+    comment on column xxx.xxx is xxx
+  删除表
+    drop table xxx [cascade constraints][purge] //  purge ，永久删除，不进回收站
+
+* 索引
+  索引可以分为七类：
+    唯一性索引；非唯一性索引；
+    平衡树索引；位图索引；      //  组织方式不同。  平衡树索引（B 树）占用空间大，快；位图索引占用空间小，慢
+    单列索引；复合索引；        //  在 a，b，c 三列创建复合索引，相当于创建了 a ，ab ，abc 三个索引
+    函数索引。                 //  索引值为计算后的值
+  索引越多，表的查询速度越快，但表更新时需要一起更新索引，开销大，所以更新慢。
+  对表进行插入的时候即向索引更新，所以索引数据块需要设置一个高的 pctfree
+  索引与表在同一个表空间时，有利于维护，反之，可以提高系统存取性能，减少 IO 冲突
+    create [unique] [bitmap] index xxx on table_name(column_name [asc|desc])[reverse][parameter_list]
+    /*    默认为B树索引。reverse 意思是索引字节反转，有利于并行服务器的 OLTP 应用，即联机事务处理过程。   */
+    /*    create index info_index on info(name desc); //  这里的 desc 不是说查询出来的结果是倒序的。  */
+    /*    如果一个表中有索引，查询时先到索引中查询，但索引中查询到的数据和查询结果和查询次序不是一致。     */
+  创建索引后可以通过合并与重建来清理存储碎片，这两种办法针对 B 树索引
+    合并  alter index xxx coalesce  只是简单地将两个叶节点合并成一个，释放多余空间，但速度快
+    重建  alter index xxx rebuild   重建整个 B 树，开销大，但能更合理的创建存储结构
+  索引重命名  alter index xxx rename to xxx
+  监视索引    alter index xxx [no]monitoring usage  使用 v$object_usage 可以查看 used 是否处于在用
+  删除索引    drop index xxx
+  * 索引只有在查询单个或几个记录的时候会被用到，即 v$object_usage 的 used 为 yes，如果是查询全部记录，不管怎么查都用不到索引
+		select*from tb1;				//	没用到索引
+		select*from tb1 where id=1;		//	假设索引键为 id ，则用到索引功能
+
+* 分区
+  分区方式      partition by
+    范围分区    range，只能针对数值型和日期型，通过 values less than 进行条件选择
+    列表分区    list，针对小集合，通过 values 进行条件选择
+    散列分区    hash，通过散列算法随机分区，不需要条件选择语句，可以实现所有分区表中记录数均衡
+    复合分区    以范围分区为主，以列表或散列分区为辅  partition 与 subpartition
+  
+  创建分区表，不同分区一般存放在不同的表空间，有利于实现高并行  
+    # range
+      create table xxx (name char(8),birth date)
+      partition by range(birth)
+      ( partition p1 values less than (to_date('1980-1-1','yyyy-mm-dd')) tablespace user1,
+        partition p2 values less than (to_date('1990-1-1','yyyy-mm-dd')) tablespace user2,
+        partition p3 values less than (maxvalue) tablespace user3 storage(initial 10M next 20M) )  
+      storage(initial 20M next 10M maxextents 10);
+    
+    # list
+      create table xxx (name char(8),sex char(1))
+      partition by list(sex)
+      ( partition male values('m') tablespace user1,
+        partition female values('f') tablespace user2 );
+    
+    # hash
+      create table xxx (name char(8),year number)
+      partition by hash(year)
+      ( partition hash1 tablespace user1,
+        partition hash2 tablespace user2 );
+      or
+      partition by hash(year)
+      partitions 2 store in(user1,user2);
+    
+    # 复合
+      create table xxx (name char(8),sex char(1),birth date)
+      partition by range(birth) subpartition by list(sex)
+      ( partition p1 values less than(to_date('1980-1-1','yyyy-mm-dd'))
+          ( partition p1_male values('m') tablespace user1,
+            partition p1_female values('f') tablespace user2 )
+        partition p2 values less than(to_date('1990-1-1','yyyy-mm-dd'))
+          ( partition p2_male values('m') tablespace user3,
+            partition p2_female values('f') tablespace user4 )
+        partition p3 values less than(maxvalue)
+          ( partition p3_male values('m') tablespace user5,
+            partition p3_female values('f') tablespace user6 ) );
+
+  创建分区索引，分区索引有三种类型
+    本地分区索引    为每个分区表建立独立的分区索引，索引与表一一对应
+    全局分区索引    通过分区方式（范围，列表，散列，复合）对全局索引进行分区，索引与表不一定是一一对应
+    全局非分区索引  将分区表看成一个完整的表建立的一个完整的全局索引
+    # local
+      create index xxx on xxx(xxx) local;
+    
+    # global partition
+      create index xxx on xxx(xxx) 
+      global partition by range(xxx)
+      ( partition p1 values less than(100),
+        partition p2 values less than(maxvalue) );
+    
+    # global
+      create index xxx on xxx(xxx)  //  和创建一般索引的语法一样
+
+* 外部表
+  外部表指的是存储在操作系统上且只在数据字典保有定义的一份文件，是一种只读表
+  oracle 为访问外部表提供了两种驱动
+    oracle_loader     可以导入外部表
+    oracle_datapump   可以导入也可以导出
+  创建外部表
+    create or replace directory dir as 'directory';                 //  注意，as 后面是一个目录，不是文件
+    grant read on directory dir to USER;
+    create table xxx(...)
+    organization external
+    ( type driver_name                                              //  oracle_loader or oracle_datapump
+      default directory xxx                                         //  需要在数据库中创建一个目录对象
+      access parameters                                             //  进行提取数据的设置
+      ( records delimited by [newline|string]                       //  在源文件中划分出记录
+        fields terminated by string                                 //  在源文件中划分出列
+        [missing field values are null]                             //  不存在的列的值设为空
+        (column1[,column2,...])                                    	//  列必须在 access parameters 的最后
+	  )
+      location (filename1 [,filename2]) )                           //  比如 location('text1.dat','text2.dat')
+    [reject limit n|unlimited]                                      //  允许读错几行
+    [parallel]
+  修改与删除外部表
+    alter table xxx parameter_list;                                 //  如 location，access parameters 等等
+    drop table xxx;
+  * 使用 oracle_datapump 导入外部表总是报错，使用 oracle_loader 就没事
+
+* 视图
+  视图可分为两种
+    简单视图  包含一个基表并且不包含函数，分组等操作，可以直接进行 DML 操作
+    复杂视图  简单视图条件以外的视图，一般要通过触发器才能实现 DML 操作
+    创建视图
+      create [or replace] [force|noforce] view xxx 
+      [(column1,column2,...)]
+      as subquery
+      [with check option [constraint xxx]]
+      [with read only]
+      force 指即使基表不存在也创建，默认是 noforce
+
+* 序列
+  存在于数据字典和内存中，断电后就没有了
+    create sequence xxx 
+    [increment by n]          //  步长
+    [start with n]            
+    [maxValue n|noMaxValue]   
+    [minValue n|noMinValue]   
+    [cycle|no cycle]          //  达到最大值后循环
+    [cache n|no cache]        //  在内存中有多少个缓存，默认 20 个
+  通过 currval 查看当前值，通过 nextval 增加一次步长
+  查看需要通过 dual，并且一个模式中可能存在多个序列，所以使用时需要 xxx.currval 这种格式
+  需要先使用一次 nextval 后才能使用 currval
+
+* 同义词
+  分为私有同义词和公共同义词，默认为私有
+    create [public] synonym xxx for xxx
+
+* 数据库链接
+  分为私有和公共，默认为私有。
+  分布式数据库中，在当前数据库访问其他数据库时需要数据库链接
+    create [public] database link xxx 
+    [connect to current user]
+    [connect to USER identified by PASSWORD]
+    using 'DATABASE'
+    当要使用已连接的数据库中的表时，表的格式为 xxx@database_link
+
+    create database link example_link
+    connect to scott identified by tiger
+    using 'my_oracle';
+    update emp@example_link set i=i+1;

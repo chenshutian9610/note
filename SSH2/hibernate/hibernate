@@ -1,0 +1,227 @@
+× 类是表，对象是记录
+
+× hibernate 是一个轻量级的 ORM（对象关系映射）框架，把 java 类中的对象与数据库中的表联系起来
+	1.读取 cfg 配置文件，创建 Configuration 对象
+	2.通过 Configuration 对象创建 SessionFactory 对象（将所有信息存入了 SessionFactory 对象的内存中）
+	3.通过 SessionFactory 对象打开 Session 实例，一个 Session 对象就相当于一个数据库连接
+	4.通过 Session 对象创建 Transaction 对象
+	5.Session 对象进行持久化操作
+	6.提交事务
+	7.关闭 Session 对象和 SessionFactory 对象
+	× 表需要含有主键，持久化类遵循 POJO （建议重写 toString ，用于一次性输出所有成员，相当于表的记录）
+
+× 创建 hibernate 对象需要配置文件 hibernate.cfg.xml 和 Object_name.hbm.xml ，这两种文件都需要 dtd
+	Object_name.hbm.xml		Object 为持久化类的类名，用于配置关联类中成员与表的字段
+	* <hibernate-mapping>
+		<class name="xx.xx.xx" table="xx">		//	类与表的映射
+			<id name="xx" column="xx">			//	类的成员与表的主键的映射
+				<generator class="native">		// 	主键生成策略
+			</id>
+			<property name="name" column="name"	type="string"/>	//	类成员与表字段的映射
+			<property name="age" column="age" type="integer"/>
+			......
+		</class>
+	  </hibernate-mapping>
+	  × hibernate 存在两种主键类型，自然主键和代理主键
+	  		自然主键，即与业务逻辑紧密联系，可以为任意类型
+	  		代理主键，即与业务逻辑无关，只是单纯为了区分记录，一般为整数类型，通常为 ID
+	  		× 自然主键给数据库维护增加了难度，所以一般使用代理主键
+	  × 与主键类型相关的，generator 提供了几个选择的模式，常用的有三个
+	  		increment	由 hibernate 自动生成唯一标识，每次自增 1，对应于代理主键
+	  		native		由数据库自身的主键生成策略来决定，对应于代理主键，最常用模式
+	  		assigned	由 java 程序来负责主键生成，对应于自然主键，默认模式
+	  × hibernate 通常用属性 name 对应类或类中成员，用 table 对应表，用 column 对应表中字段
+	  × property 的 type 用来指定持久化类中属性的类型，type 可以为 java 基本类型也可以为包装类型
+	  	java 基本类型不能表达 null ，所以一般使用的是包装类型（string，integer，long... ）
+	  × property 除了上述属性外，常用的还有 not-null，unique 和 lazy（是否延迟加载，默认 false）
+	  	延迟加载意思为在创建实例的时候不从数据库加载数据，等到要使用时才加载，class 和 id 一样含有 lazy
+	  	session 对象的 load 方法也是使用延迟加载的概念
+	  × hibernate-mapping 含有属性 default-access，用于设置访问属性的策略
+	  		property	通过 getter，setter 方法访问属性，默认策略
+	  		field		通过反射机制访问属性
+	  		× hibernate-mapping 下的所有子标记都含有 access 属性，可以覆盖其设置
+	hibernate.cfg.xml	hibernate 的核心配置文件，用于配置 hibernate 全局参数，如数据源或内存缓存之类
+	* <hibernate-configuration>
+		<session-factory>
+			<property name="hibernate.dialect"> org.hibernate.dialect.MySQLDialect </property>
+			<property name="hibernate.connection.driver_class">
+				com.mysql.jdbc.Driver
+			</property>
+			......
+			<mapping resource="xx/xx/Object_name.hbm.xml"/>
+		</session-factory>
+	  </hibernate-configuration>
+	  × session-factory 一般只含有 property 和 mapping 标记
+	  × hibernate 的配置文件有两种，hibernate.properties 和 hibernate.cfg.xml，后者可以覆盖前者
+	  × hibernate.dialect 属性在 4 以后的版本，类最好设置为 MySQL5Dialect，不然即使打开 hbm2ddl 也无法自动创建表
+	    hibernate.cfg.xml 中的 property 都是 hibernate 前缀，值为具体的类，常用如下：
+	    	hibernate.dialect
+	    	hibernate.connection.driver_class
+	    	hibernate.connection.url
+	    	hibernate.connection.username
+	    	hibernate.connection.password
+	    	hibernate.connection.autocommit
+	    	hibernate.show_sql
+	    	hibernate.format_sql
+	    	hibernate.hbm2ddl.auto
+	    	* hbm2ddl 可以选择映射时对表的操作，常用取值如下：
+	    		create			重建一个表
+	    		create-drop		先 drop 再 create 结束时再 drop ，一次性的表
+	    		validate		验证表结构与类是否一致
+	    		update			加载时更新表结构,如果没有表则创建一个
+	    × 除了上述本身常用的 property 外，hibernate 还可以扩展使用外部的插件，最常用的为 c3p0
+    	  c3p0 是一种 jdbc 连接池，作用类似于服务器的线程池，当建立连接时返回现有的空闲的线程
+    	  * <property name="connection.provider_class">
+    	  		org.hibernate.connection.C3P0ConnectionProvider
+    	  	</property>
+    	  	<property name="c3p0.min_size> 5 </property>	最少的可用连接
+    	  	<property name="c3p0.max_size> 20 </property>	最多的可用连接
+    	  	<property name="c3p0.timeout"> 120 </property>	当连接空闲超过 120 毫秒会被清除
+    	  	<property name="c3p0.idle_test_period> 3000 </property>	每 3000 秒检查空闲连接数目
+    	  	× 当有一个数据库连接被断开，该连接会被保存在连接池中，
+    	  	  当有一个实例申请连接时会将该空闲的连接赋予该实例，
+    	  	  连接池每个一段时间检查池中的空闲连接数量，使之始终保持在 [min,max] 之间
+    	  	  当有一个连接空闲时间超过 timeout 时会被清除出去
+  × hbm 文件和持久化类存放在一起，放在包中
+  	cfg 文件通常放在 classes 目录下，与 struts2 一样
+  	cfg 文件可以改名，但使用 configure 方法时要配置文件路径和名字
+ 
+× hibernate 有 6 个常用的核心 API 
+	Configuration	configrue,buildSessionFactory
+	SessionFactory	openSession
+	Session			beginTransaction,createQuery,createCriteria  save,update,delete  get,load
+	Transaction		commit,rollback
+	Query			list,uniqueResult
+	Criteria		list,uniqueResult,add
+	* Query 是针对 HQL 查询的，Criteria 是针对条件限制查询的，都是面向对象查询，而不是面向表中数据 !!!
+    * Criteria 对象的 add 用来添加条件限制，一般是 Restrictions 的静态方法返回的 Criteria 对象	 
+    	Criteria criteria=session.createCriteria(User.class);
+    	criteria.add(Restrictions.eq("username","root");
+    	User user=(User)criteria.uniqueResult();
+    	× 其中的 username 为持久化类中的成员，不是表的字段
+    	× 当返回多条记录时为 List<User>users=criteria.list();
+   
+* 持久化类的三种状态
+	瞬时态	持久化类实例化，但未与 session 产生关联，在内存中是孤立的存在
+	持久态	与 session 对象关联，通过持久化对象可以直接操作数据表，不需要再使用 session
+	托管态	与 session 失去关联，但与数据表存在逻辑上的联系
+	× 这三种状态可以相互转换，由于瞬时态和托管态没有与 session 连接，所以会被 JVM 的垃圾回收机制回收
+	
+× 一级缓存，为 hibernate 内置的 session 缓存，标配不可卸载
+	用来缓存与操作 session 中持久化对象，减少数据库的访问
+	当 session 调用 evict 方法时删除一级缓存中某一对象
+	当 session 调用 clear 方法时清空一级缓存中所有对象
+	当 session 调用 reflash 方法时会让一级缓存与 hibernate 快照中的数据保持一致
+	当 session 调用 close 方法时关闭一级缓存
+	当数据在缓存中找不到数据时会到数据库中查找，然后将查找到的记录保存在一级缓存中
+	当数据第一次缓存到一级缓存时，会复制一份保存在 hibernate 快照中
+	通过 hibernate 操作数据库实际上是在缓存中操作，同步数据库时会将缓存与快照中的数据比较，执行相应操作
+	session 在提交事务，查询数据或手动使用 flush 方法时会同步数据库
+	
+× hibernate 关联关系
+	× 可以分为一对一，一对多和多对多关系
+	  在一对多中，一为多提供主键当外键，多可以用集合表示
+	  在多对多中，需要产生中间表（保存着双方的主键作为外键）
+		<many-to-one> 	包含 name ， class 和 column 属性，column 为外键列
+		<one-to-many>	包含在集合标记下，一般只包含 class ，其 name 在 set 中被声明 
+		<many-to-many>	包含在集合标记下，包含 class 和 column 属性，column 为该表的主键列在中间表的列
+		<key>			包含在集合标记下，包含 column 属性，column 指向子表的外键列（父表含主键，子表含外键，就像顾客与订单）
+		<set>			在一对多关系时只包含 name ，在多对多关系时还要包含 table 指向中间表
+	× 控制反转（与 IoC 不一样）
+	  在一对多或多对多关系中，双方默认都拥有维护双方关系的控制权，因为 inverse 默认为 false 
+	  但是如果在进行同一操作时，双方都进行了一次，就会变成重复操作，所以一般关掉一方的维护权
+	  在多对多关系时关闭随便一方，在一对多时关闭一的那一方（所以 <many-to-one> 没有 inverse 属性）
+	  关闭控制权只要将 inverse 改为 true 就行了
+	× 级联操作
+	  对一方进行操作时和他有关系的所有表对象都会受影响，级联关键词为 cascade ，可取以下值做影响范围
+	  	save-update			只对更新数据产生级联效果
+	  	delete				只对删除数据产生级联效果
+	  	delete-orphan		当解绑关系时被解绑的一方会变成“孤儿”，该外键将会变成 null 。解绑时删除产生的“孤儿”节点（stu.getCourses().remove(course))
+	× inverse 打开时不能进行关联关系的维护，所以也就不能使用 cascade 进行级联操作
+	
+* hibernate 检索方式
+	导航对象图检索	读取数据到持久化对象，通过持久化对象来操作与检索
+	OID 检索			(xxx)session.get(xxx.class,3);   	
+	本地 sql 检索	通过 session 的 createSQLQuery 方法生成 SQLQuery 对象，自定义 sql 语句
+	QBC（query by Criteria）
+	× Restrictions 对象使用其静态方法返回 Criteria 类型被加入到 Criteria 对象中，Criteria 就是条件限制的集合
+	  Criteria.add(Restrictions.and(Restrictions.eq("name","chen"),Restrictions.lt("age",18)));	//	名字为 chen ，年龄小于 18
+	HQL（hibernate query language）
+	× 和 Query 对象是一起出现的，查询时用类代替表的位置
+	× 和 SQL 一样的语法，而且扩展了一些更加方便的特性，如：
+		当查询表中所有列时可以省略 select * 
+		可以进行 DML 操作, update Student set name='chen' where id='3'; 	//	Student 是类，不是对象，也不是表
+		可以和 PreparedStatement 一样在语句中使用 ？和 setXXx 方法（从 0 开始，PreparedStatement 从 1 开始）
+		可以和 Oracle 一样使用参数，Oracle 用 & 而 HQL 用 : ，且 HQL 需要使用 setParameter 来赋值
+			Query query=session.createQuery("from login where id=:id");
+			query.setParameter("id",6);
+	× Query 和 Criteria 可以使用 setFirstResult 和 setMaxResult 来实现分页（这两个方法需要放在获取命令的前面）
+		query.setFirstResult(0);
+		query.setMaxResults(2);
+		List<Student>list=query.list();
+		for(Student stu:list)
+			System.out.println(stu.getName());
+	× Criteria 和 Query 的初始化都是通过 session，并且方法名也很类似，但是它们各自的初始化参数不同
+		Criteria criteria=session.createCriteria(Student.class);
+		Query query=session.createQuery("from Student");
+
+× hibernate 事务处理
+	× 事务并发问题
+		脏读			读取未提交的事务数据
+		不可重复读	重复读取同一行返回不同结果
+		虚读/幻读	重复查询同一表返回不同结果
+		更新丢失		
+			A 事务撤销 --> 把 B 事务覆盖
+			A 事务提交 --> 把 B 事务覆盖
+	× 事务隔离级别
+		1.	Read Uncommited	可以脏读，但当一个事务进行写处理时其他事务只能进行读处理，可以防止更新丢失问题
+		2.	Read Commited	防止脏读
+		4.	Repeatable Read	当一个事务进行读操作时，其他事物只能插入不能更新，可以防止不可重复读问题
+		8.	Serializable	事务串行执行，不能并发
+		× 前面的数字为隔离方式的级别，分别为 1 2 4 8 
+		× 一般数据库的默认级别是 2 ，可以在程序开发中通过乐观锁和悲观锁来解决其他并发问题
+	× hibernate 的事务配置
+		hibernate 事务处理方式可分为本地事务（thread）和全局事务（jta，全局事务通过应用服务器跨多个数据库进行操作，笨重，一般不用）
+			通过 hibernate.current_session_context_class 来指定使用哪一种事务处理方式
+		事务隔离级别配置
+			通过 hibernate.connection.isolation 来配置，取值为 1 2 4 8 ，默认为 2
+	× 悲观锁		在进行事务时总认为有其他事务在操作同一数据，所以在操作时会锁定数据是其他事务不能操作
+		LockMode.UPGRADE		总是通过 select 从数据库中加载数据，操作时在底层使用 select ... for update
+		LockMode.UPGRADE_NOWAIT	是 Oracle 特有的锁，从数据库中加载数据时如果有别的数据使用了 for update 则不等待直接返回错误
+		× 需要底层数据库支持悲观锁，不然传输的是普通的 select 语句
+		× Student stu=(Student)session.get(Student.class,5,LockMode.UPGRADE);
+	× 乐观锁		在进行事务时总认为不会有其他事务在操作同一数据，使用 version（版本号）来管理事务
+		事务开始时会获取数据的版本号，事务提交成功时会进行 version++ 
+		事务在提交时会对比数据的 version 和自己的 version ，如果比它大则提交，反之则知晓有其他事务已经更新了数据，该事务将被撤销并报错
+		使用乐观锁的步骤：
+			首先需要在类与表中添加 version 成员
+			然后在 hbm 文件中添加 version 标签指向添加的成员，version 标签必须放在 id 标签后面
+			× 每次事务都是给 version 加一，所以使用时要先给 version 初始化一个值
+				
+× hibernate 二级缓存	
+	session 级别的缓存是一级缓存，但 session 关闭时缓存会被清空回收
+	SessionFactory 级别的缓存分两种，一种是内置缓存，另一种就是二级缓存，二级缓存需要使用第三方的包，默认情况下是不开启的
+		内置缓存		存储着映射文件和预定义 sql 语句，是创建 session 对象的基础，是只读的
+		二级缓存		对数据库中数据的复制，存储在内存或磁盘，结构上大致可分为四种缓存区域
+						class cache region			对象缓存
+						collection cache region		集合缓存
+						query cache region			查询缓存
+						update timestamps			保存上面三种结构的时间戳，每个一段时间对比时间戳然后更新缓存
+		× 二级缓存也存在并发问题，因此提供了以下四种隔离级别，对应于事务的隔离级别
+			Nonstrict-read-write	1
+			Read-Write				2
+			Transaction				4
+			Read-Only				8
+		× 第三方的二级缓存插件有很多种，一般选择 EHcache，其不支持 Transaction 级别的隔离
+		  二级缓存一般保存着不常被访问且不常被修改的数据
+		× EHcache 配置
+			首先需要引入 EHcache 的 jar 包
+			然后需要在 src 目录下添加 ehcache.xml 配置文件，在 hibernate 的 etc 文件夹下就有，不用重写
+			更改 cfg 文件，添加如下内容
+				<property name="hibernate.cache.use_second_level_cache">true</property>
+				<property name="hibernate.cache.provider_class">
+					org.hibernate.cache.EHCacheProvider
+				</property>
+				<mapping .../>
+				<class-cache usage="read-write" class="xxx.xxx"/>
+				× class-cache 标签一定要放在 mapping 标签后面，class 指的是 mapping 中的 class ，usage 指定隔离级别	

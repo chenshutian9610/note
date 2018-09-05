@@ -1,0 +1,116 @@
+* 闪回技术可分为六种,如下:
+    闪回查询
+    闪回版本查询
+    闪回事务查询
+    闪回表
+    闪回删除
+    闪回数据库
+  其中,前四个是基于撤销表空间的回滚信息实现的,最后两个是基于回收站和闪回恢复区实现的;前三个是闪回查询,后三个是闪回错误
+  与撤销表空间有关的初始化参数有:
+    undo_management
+    undo_tablespace
+    undo_retention      //  信息在回滚段中保留的时间,比较重要
+    
+* 闪回查询
+  查询某一个时间点的表的数据
+  闪回查询有两种方式,基于 scn 和基于时间戳,语法如下:
+    select xxx from xxx as of scn|timestamp xxx where xxx ;
+  在 oracle 内部都是基于 scn ,即使语句中指定为 timestamp ,编译时也会自动转化为 scn ,
+  系统时间与 scn 的对应值存储在 smon_scn_time 表中
+  ------------- scn
+	select current_scn from v$database;
+	select * from tb1 as of scn 1058438;
+	需要事先知道 scn 的值,注意 scn 的值并不只是每次操作才会 +1 ,后台程序的操作也会使它 +1
+  ------------- 时间戳
+	select*from tb1 as of timestamp to_timestamp('2018-6-29 23:50:24','yyyy-mm-dd hh24:mi:ss');
+	* 时间戳方法需要使用 to_timestamp 函数
+	* 必须含有年月日,不然会被定位到 1970-1-1
+	* hh 只支持 1-12 ,24 进制需要在后面加上 24
+	* 分钟使用 mi 而不是 mm(月) 
+
+* 闪回版本查询
+  列出事务为单位的值的变化,每个版本为一个事务的提交,包含几个专用的列:
+    versions_xid ,          版本的标志号
+    versions_startxxx ,     版本开始的点,当是基于 scn 时 xxx 为 scn ,当是基于时间戳时 xxx 为 time
+    versions_endxxx ,       版本结束的点, xxx 同上
+    versions_operation      版本的操作,如果为 u 则是 update
+  语法
+    set time on 
+    ......
+    col starttime format a30        设置列名宽度为 30 字符
+    col endtime format a30
+    col operation format a10
+    select versions_xid xid,
+        versions_starttime starttime,
+        versions_endtime endtime,
+        versions_operation operation,
+        phone from info 
+        versions between timestamp minvalue and maxvalue    //  minvalue 与 maxvalue 也可以为具体的值 
+        as of timestamp to_timestamp('2018-5-4 10:25:03','yyyy-mm-dd hh24:mi:ss')
+        where name='chen';
+    如果没有指定 as of 语句,则范围为 [minvalue,maxvalue] , 否则范围为 [minvalue,timestamp_value]
+    基于 scn 的查询的语法同上
+    
+* 闪回事务查询
+  通过 flashback_transaction_query 表查询某一版本(事务)的具体过程,该表常用的列有 Operaion , undo_sql , table_name
+  一般闪回版本和闪回事务查询是一起的,先用闪回版本查询获取事务 id 和结果,再用闪回事务查询获取该事务详细信息
+  oracle 11g 默认没有记载事务中其他操作记录,需要使用 alter database add supplemental log data 来打开(supplemental 补充的)
+    select versions_xid,name from info versions between scn minvalue and maxvalue where id=1;
+    select operation,undo_sql from flashback_transaction_query where xid=hextoraw('1654135431'); // hextoraw 将字符串转化为 raw 型
+	
+	OPERATION    UNDO_SQL						//	如果没有开启,undo_sql 为空
+	------------ ------------------------------
+	UPDATE       update "WANNA"."TB1" set "NAME
+				 " = 'baidu' where ROWID = 'AAA
+				 SNkAAGAAAACIAAC';
+
+	UPDATE       update "WANNA"."TB1" set "NAME
+				 " = 'bili' where ROWID = 'AAAS
+				 NkAAGAAAACIAAC';
+
+	BEGIN
+	
+* 闪回表
+  需要有 flashback any table 系统权限和相应的对象权限
+  需要指定的还原点保留在回滚段中,这可以通过合理地设置 undo_retention 的值来实现
+  需要启动被操作表的 row movement 特性, alter table xxx enable row movement
+  将表闪回到某一时刻:
+    flashback table xxx to scn|tablestamp xxx [enable|disable triggers]
+
+* 闪回删除
+  需要打开回收站功能,通过 alter system set recyclebin=on;
+  闪回被意外删除的对象,当回收站功能打开时,使用 drop 删除的对象都会移到回收站中,并不会真正的被删除,除非删除时指定为 purge
+  oracle 中有三个回收站，recyclebin,dba_recyclebin 和 user_recyclebin，都是可以访问的表，不一样在于所有者不同
+  查看回收站中的信息,常使用列:
+    object_name     对象在回收站中的名字
+    original_name   对象原来的名字
+    type            对象类型, table , index , ...
+  可以使用 select 查询回收站中对象的内容,但必须使用回收站中的名字,即 object_name
+  清空回收站
+    purge table|index|... xxx           清空回收站中指定的对象
+    purge recyclebin|dba_recyclebin     清空整个回收站
+    purge tablespace xxx [user xxx]     清空表空间或表空间中某一用户的痕迹
+  闪回被删除的表
+    flashback table xxx to before drop [rename to xxx]
+  * 在 sys 模式的表，即 sys.tb，如果被删除之后不会被存入任何 recyclebin，所以没法闪回
+  * dba_recyclebin 存放的是被 sys 用户删除的其他用户的表，如 drop table wanna.tb1;
+
+* 闪回数据库
+  如果控制文件损坏,则就算使用备份的控制文件也不能闪回数据库
+  闪回数据库不仅需要闪回删除的条件,而且还需要应用闪回恢复区,闪回日志文件和归档日志文件,所以需要合理设置恢复区和闪回文件的大小
+  闪回数据库步骤
+    1. 设置为归档模式                   在数据库处于 mount 时 alter database archivelog
+    2. 设置闪回恢复区                  	默认情况下已经有了,通过 show parameter db_recovery_file 查看
+    3. 启动 flashback 特性              在数据库处于 mount 时 alter database flashback on
+    4. 设置闪回日志文件合理的保存时间   通过修改参数 db_flashback_retention_target
+    5. 闪回数据库                       flashback [standby] database to [scn|timestamp xxx]|[before scn|timestamp xxx]  
+                                        //  standby 指定执行闪回的数据库为备用数据库
+    select sysdate from dual;
+    select current_scn from v$database;
+    select oldest_flashback_scn,oldest_flashback_time from v$flashback_database_log;
+    create table info_x (id number);
+    shutdown immediate
+    startup mount exclusive
+    flashback database to before scn 004657421230;           
+    alter database open resetlogs;                  //  闪回数据库相当于不完全恢复,需要重置日志文件
+    select * from info_x;                           //  报错

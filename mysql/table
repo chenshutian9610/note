@@ -1,0 +1,78 @@
+×	查看表结构有两种方式
+		show columns from ${table}	
+		desc ${table} [${column}] 	可以查看表中某一个列的结构
+× 反编译表，查看表的具体生成信息
+		show create table ${table}	返回的结果为 create table 语句格式
+× 查看表的状态属性，show table status like ${table} \G;
+
+× mysql 可以创建临时表，和 oracle 一样使用 temporary 关键字
+	mysql 要求创建表时至少含有一个字段，字段约束有 
+		primary key
+		auto_increment	要求该字段为主键
+		unique
+		not null
+		default
+	× mysql 中没有实现 check 的功能，编译能通过，但是不会生效，需要手动写触发器
+	× 只有 InnoDB 引擎支持外键，并且外键不能在列级约束中定义，必须在表级约束中定义才有效
+			create table test(
+			 id int [references one(id)]															编译成功但不生效
+			 [constraint fk_two foreign key(id) references one(id)]		为外键约束赋予名字，卸载外键时需要使用约束名字
+			 [foreign key(id) references one(id)]											可以通过 show create table ${table} 查看外键约束的名字（系统定义的）
+			);
+
+× 修改表（alter table）的常用从句（可以不加 column 关键字，直接加列名）
+	------------- add
+		add ${column} ... [first|after ${column}										alter table test add id int first
+		add primary key(${column}[]) 
+		add [constraint ${name}] foreign key(${column}[]) references ${table}(${column}[])
+		add unique(${column}[])																			unique 是一种特殊的索引
+		add index ${name}(${column}[]) 
+	------------- modify
+		modify ${column} ...																				alter table test modify id int not null default 3
+		alter ${column} set default ${value}|drop default						这句可以不用知道，一般使用 modify 可以解决全部
+		rename as ${newTableName}																		相当于 rename table ${oldName} to ${newName}
+	------------- drop
+		drop primary key(${column}[])
+		drop foreign key(${column}[]) ${name}
+		drop index ${name}																					可用来卸载 unique，名字通过 show create table 命令来查看
+
+× 复制表，使用 like 或 as 关键字，like 只复制结构，as 连同内容，注意它们后接的宾语不同
+		create table one like test
+		create table two as select * from test
+		
+× 插入数据的方式有三种
+		insert into test valeus(1,'chen'),(2,'lin')
+		insert into test set name='chen'
+		insert into test select id,name from one
+	
+× 索引
+		mysql 中索引可分为
+			唯一性索引					主键和唯一键专用
+			单列/多列索引			
+			全文索引						fulltext，MyISAM 引擎专用，只能用于字符型字段，如 char，varchar，text 等
+			空间索引						spatial，MyISAM 引擎专用，字段需要是 geometry 型
+		创建索引有三种方式
+			创建表时，create table ... index ${name} (${column}[]) ...
+			修改表时，alter table ${table} add index ${name} (${column}{})
+			直接创建	，create index ${name} on ${table}(${column}[])，需要有关键字 on ，删除索引时也需要有这个
+								create index myIndex on test(name(2)) 	//	name 的类型为 varchar(8)，这样写索引，更快，但有利有弊
+× 视图
+		create view ${view} as select*from test
+		show create view ${view}
+		show table status like ${view}\G
+			
+× 在 mysql 中为了实现兼容，产生了一种特性（识别但不生效），如 check 和列级的外键，这样当执行其他数据库编写的 sql 文件的时候不会报错
+× 在 mysql 中 constraint 关键字可有可无，一般有也只是起到起名的作用，如 constraint fk foreign key(id) references test(id)，注意 constraint 后接名字
+	constraint 可以用来给 unique 和 foreign 起名字，但没法给 primary 起名字，编译能通过，但是没有生效
+× 在 mysql 中 key 有四种
+		pri		主键
+		uni		唯一键
+		mul		普通索引键
+		空			一般键
+× 生成主键，外键和唯一键的时候都会产生索引
+		删除主键时，主键索引被删除
+		删除外键时，外键索引仍保留
+		删除唯一键是通过删除相对应的索引
+× mysql 支持正则表达式匹配字符串，需要使用关键字 regexp，如 select * from test where name regexp '^l' order by id asc limit 5
+  可以使用比较符 <=> 可以用来判断是否为 null，如 select * from test where name <=> null
+× mysql 不支持 full join

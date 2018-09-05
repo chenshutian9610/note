@@ -1,0 +1,50 @@
+maven 结构
+src
+	-main
+		-java
+			-package
+	-test
+		-java
+			-package
+	resources
+
+maven 命令
+mvn compile		编译项目，会生成一个 target 目录
+mvn test		运行测试项目，会在 target 目录中生成 test-classes 目录
+mvn package		打包项目，会在 target 中生成当前项目的 jar 包
+mvn clean		删除生成的 target 文件夹
+mvn install		将 jar 包发布到本地仓库中（默认是 ~/.m2/repository/ 下）
+× maven 项目需要有一个 pom.xml 文件
+	<?xml version="1.0" encoding="utf-8"?>
+	<!-- 需要 xsd 文件 --!> 
+	<project ...>
+		<!-- 版本号为固定的 --!> 
+		<modelVersion>4.0.0</modelVersion>	
+		
+		<!-- 项目的 jar 包格式 --!>
+		<groupId></groupId>			
+		<artifactId></artifactId>	
+		<version></version>			
+		
+		<dependences>
+			<dependency>			
+				<groupId></groupId>
+				<artifactId></artifactId>
+				<version></version>
+			</denpendency>
+		</denpendences>
+	</project>
+	× 指定了 dependency，maven 会在本地 .m2 文件夹中查找本地 jar 包，如果没有则从网上下载
+	× 在 maven repository 中可以得到不同 jar 包的依赖描述，将至 copy 到 pom.xml 文件中就行了
+	× groupId 对应 package 
+	  artifactId 对应 jar 名
+	  version 对应 jar 的 version 名
+	  在 .m 文件夹中的 repository 查找缓存的 jar 包，遵循如下规则
+	  	package_name/artifactId/version/artifactId-version.jar
+	  	例如
+	  	<dependency>			
+			<groupId>org.hibernate</groupId>
+			<artifactId>hibernate</artifactId>
+			<version>3.2.0</version>
+		</denpendency>
+		对应 org/hibernate/hibernate/hibernate-3.2.0.jar

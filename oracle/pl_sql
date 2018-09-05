@@ -1,0 +1,304 @@
+* pl/sql 将多个 sql 语句合成一个块传输给服务器处理,可以减少网络流量提高性能
+  pl/sql 发送到数据库服务器的 pl/sql 引擎,由引擎处理程序内部的过程化语言,遇到 sql 语言就交给 sql 执行器处理
+  pl/sql 程序简单格式:
+    declare
+        name type|column_name%type|table_name%rowtype          //  类型可以自定义,也可以通过 %type 或 %rowtype 选择和表内对象一样
+    begin                                                      //  begin--end 相当于 {} ,是必须的
+        ...                                                    //  通过 into 语句或 := 给变量赋值
+    exception
+        ...
+    end;                                                       //  所有 pl/sql 程序都是以 end; 结尾
+  
+  pl/sql 程序不区分大小写,需要注意的分隔符如下
+    :           主机变量标识符
+    :=          赋值语句        //  要特别注意,与 = 区分开
+    =           关系等于
+    ..          范围操作        //  要特别注意, a..z 即 a 到 z
+    /*...*/     多行注释
+    --          单行注释
+    ||          字符串连接符
+    @           数据库链接符
+    <<...>>     标签           //  外部变量和内部变量名称一样时会用到
+
+  数据类型
+    数字类型    binary_integer , pls_integer , number
+    布尔类型    true , fales , null                            //  需要注意有 null 的情况
+    引用类型    ref cursor|object_type                         //  引用游标或对象
+    记录类型    record
+    集合类型    table
+    类型变量    %type , %rowtype                               //  前者和某列的类型一样,后者和某表中记录类型一样
+    binary_integer 用四个字节的二进制存储,相当于 int ,溢出会自动变为 number ; pls_integer 和 binary_integer 一样,但溢出会报错
+
+  声明
+    name [constant] type [not null] [:=|default xxx];         //  列变量,一般用 %type
+    type xxx is record(列变量[, ... ]);                       //  记录变量,一般用 %rowcord 更容易
+    通过 select into 可以给变量赋值
+        如果没有找到数据则抛出 no_data_found 异常
+        如果结果记录太多则抛出 too_many_rows 异常
+    通过 returning into 给变量赋值
+        效果和 select into 一样,区别在于 returning into 是加在结尾的,可以赋值处理后的数据,更灵活
+        update info set name='chen' where id=1 returning name into my_variable;
+
+  编译指示,pragma
+    相当于 c 的 #define
+    exception_init(自定义异常,错误号)
+	----------------------
+		declare
+			no_such_file exception;
+			pragma exception_init(no_such_file,-20222);
+		begin
+		......
+		end;
+
+  控制结构
+  1. 选择结构
+    if 选择
+        if then		//	且和或不是平常用的 && 和 ||，而是 and 和 or
+        elsif then
+        else
+        end if;
+    case 选择
+        case          
+        when then
+        else 
+        end case;
+    * 进行等值比较时, case 后面加上要比较的变量, when 后面接一个值,如 when 'str' ...
+    * 多种条件比较时, case 后面为空, when 后面接表达式,如 when my_variable<4 ...
+  2.循环结构
+    简单循环
+      loop
+      ......
+      exit [when condition]       //  一定要有的语句,否则会进入死循环
+      end loop;
+    while 循环
+      while xxx
+      loop
+      ......
+      end loop;
+    for 循环
+      for xxx in [reverse] xxx..xxx   //  系统会自动定义 for 的循环变量与 in 后面的数据类型一样,不用显示声明循环变量
+      loop
+      ......
+      end loop;
+
+  游标
+    隐式游标    使用 select 或 DML 操作时,系统自动生成
+    显示游标    用户自定义:定义游标>打开游标>检索游标>关闭游标
+        cursor xxx [(name type)] is select_query    //  定义在 declare 中,括号内为参数,游标可以像函数一样使用
+        [for update                                 //  定义可修改表的游标,使用时会对表进行加锁,其他用户不能访问,直到 commit 或 rollback
+        [of column_name]                            //  当操作涉及多个表时,可通过 of 指定其中一个表独有的列,不对该表加锁
+        [nowait] ]                                  //  当操作的表被其他用户锁定时不等待,直接报错
+        begin
+        open xxx [(name)] ;
+        loop
+        fetch xxx into my_variable;
+        exit when xxx%notfound;                     //  游标属性为 notfound 说明检索到最后了,这句话必须是 fetch 的下一句
+        end loop;
+        close xxx;
+        end;
+        * 如果是使用 for 循环直接把游标放在 in 后面就行了, for variable in cursor_name loop ... end loop;
+        * 当 cursor 指定 for update 时
+            更新语句为: update table_name set xxx=xxx where current of cursor_name;
+            结尾必须有 commit 来对对象解锁,并且 commit 不能在循环语句中(执行一次循环后就释放对象,直接报错)
+  游标属性
+    %isOpen
+    %found
+    %notFound
+    %rowcount           //  游标已经检索了几个记录
+    %bulk_rowcount(i)   //  隐式游标没有这个属性,显示游标也很少用
+    * 显示游标使用属性: cursor_name%isOpen
+      隐式游标使用属性: sql%notFound        
+
+  游标变量
+    比静态游标更加灵活,把游标当成一个变量,不在声明的时候指定 select 语句,而是在打开时再指定,一个游标变量就可以被很多 select 语句使用
+    使用步骤:
+        declare
+        type cursor_type is ref cursor [return record_type] //  定义游标类型,如果没有 return 所有游标类型都是一样的
+        cursor_variable cursor_type;                        //  用定义的游标类型来声明游标变量
+        begin   
+        open cursor_variable for select ...                 //  在打开的时候用 for 分配 select 语句
+        ......
+        close cursor;
+        end;
+        * 游标类型的区别在于 return ,如果有则为强类型,要求 select 返回的数据类型必须是指定的记录类型
+        * 系统预定义了一个游标类型 sys_refcursor ,可直接使用
+        * 游标变量的检索不能使用 for 循环
+
+  异常处理
+    pl/sql 程序有两种错误
+        编译错误    由编译器发出
+        运行错误    由引擎发出
+    异常可分为三种
+        预定义异常      常见的系统异常,发生时可以直接通过 exception 捕获
+        非预定义异常    其他的系统异常,比如主键约束异常之类,没有在系统中声明,但有特定的错误号
+        用户自定义异常  用户可用的自定义异常错误号有 1000 个, -20999~-20000
+            非预定义异常和自定义异常都需要用户定义和绑定异常
+                exception_name exception;
+                pragma exception_init(exception_name,-#####);
+                * 非预定义异常和自定义异常的区别在于
+                    非预定义异常有特有的系统的错误号,不能改,需要先执行一次错误获得其错误号
+                    自定义异常需要手动抛出异常, raise exception_name;
+        * 捕获异常
+            exception 
+                when exception1 [or exception2 ...] then ... ;
+                when others then ... ;
+        * 错误号全称为 ora-##### , 绑定时错误号 -#####
+    * 抛出异常时绑定错误信息 raise_application_error(-#####,'str');
+	* oracle 提供两个字段来访问错误对象的信息，sqlcode 和 sqlerrm
+		sqlcode		用户自定义异常返回 1，not data found 返回 100，其他异常返回内部错误号
+		sqlerrm		返回错误信息
+
+  注意:
+    字符型文字用单引号圈起,但如果文字中包含单引号,在其前面再加一个单引号用以转义     'I''m fine.' --> I'm fine.
+    日期型文字,其格式随 to_date 定义的格式
+    系统有预定义输出方法 dbms_output.put_line('') ,要输出该方法中的语句需要修改环境变量 serverOutput
+    对象引用对象中的变量
+        当使用单个的时候,格式为 xxx.xxx
+        当使用多个的时候,格式为 xxx(xxx,xxx,...)
+    通过 update 更新行时,使用 row 关键字, update xxx set row=row_variable where xxx=xxx;
+    字符串比较      //  需要特别注意
+        对定长字符串使用填充比较
+        对含有不定长字符串使用非填充比较
+        'abc' 和 'abc  ' 两个字符串如果采用填充比较则相等,否则后者大于前者,
+        varchar2 与 char 类型比较采用非填充比较,即使数据一样,也不一定相等,如一个是 'abc',另一个是 'abc  ' ,
+        所以一般要求比较的双方类型一致,可以使用 %type 实现
+    游标只能向下,如果要检索前一个只能重开
+  
+* 存储过程
+    create [or replace] procedure xxx                   //  创建或修改
+    ( [name [mode] type [:=|default xxx], ... ] )       //  定义形参,type 只能有类型不能带精度,如不能使用 char(8) ,只能是 char
+    as|is                                               //  相当于 declare ,声明变量,即使不声明变量,也不能少
+    begin
+    exception
+    end xxx ;                                           //  必须以过程名结尾
+  mode 有三种:
+    in          只能将实参传给形参,默认模式,可以是常量或是表达式
+    out         只能将形参传给实参,读实参一律为 null ,只能是变量
+    in out      双向,只能是变量
+  * 在 sql*plus 中通过 execute 或 call 使用创建的存储过程, execute pro(x,y,z);在 pl/sql 中直接使用
+  * 通过 user_source 的 text 列可查看存储过程,函数或包的源代码
+  * 重编译存储过程 alter procedure xxx compile; 
+  * 存储过程一般没有返回值,但可以通过 out 和 in out 参数返回多个值,要注意当类型是这两个时实参必须是变量
+
+* 函数
+    create [or replace] function xxx                  
+    ( [name [mode] type [:=|default xxx], ... ] )       
+    return type                                     //  一样不能带有精度,最需要注意的是这里不能带分号(;)
+    as|is                                               
+    begin
+    exception
+    end xxx ;       
+  * 函数通常只有一个返回值,所以参数模式一般是 in
+  * 可以直接调用函数:   xxx=function(x,y,z);        //  因为函数有返回值
+
+* 局部程序(局部函数,局部存储过程)
+    创建函数和存储过程会被编译后永久存储在数据库中,如果只是使用一次的话可以在 pl/sql 程序中的声明创建,执行过后就没了
+    局部程序可以实现重载,存储程序不行,因为对象在数据库中不能同名
+
+* 包,包括包规范与包体
+  包规范( package )与包体( package body )
+    包规范  只包含声明,相当于抽象类,存储过程与函数只包含定义
+        create or replace package xxx
+        as
+        name type [default|:= value]，... ；
+        procedure xxx(x,y,z);
+        function xxx(x,y,z);
+        end xxx;
+    包体    在包中定义的存储过程与函数的具体实现
+        create or replace packate body xxx
+        as
+        procedure xxx ... ;
+        function xxx ... ;
+        end xxx;
+  * 包就相当于一个类,也相当于一个 pl/sql 程序,但却是一个永久存储在磁盘中的 pl/sql 程序
+  ---------------------------------------------
+  create or replace package xyz
+  as
+	x number;										//	共享变量
+	procedure abc(a number,b number);
+	function efg(a number,b number)return number;	// 	函数必须含有 return 语句
+  end xyz;
+  
+  create or replace package body xyz 
+  as
+  
+	procedure abc(a number,b number)
+	as 
+	  begin
+		x:=a+b;
+		dbms_output.put_line(x);
+	  end abc;
+	  
+	function efg(a number,b number) return number	//	return 语句必须和 function 关键字在同一行
+	as
+	  begin
+		x:=b+a+x;									//	共享变量的应用
+		return x;
+	  end efg;
+	end xyz; 
+  ---------------------------------------------
+  * 删除包
+        drop package xxx;                           //  删除整个包,没有只删除包规范的语句
+        drop package body xxx;
+  * 重编译包
+        alter package xxx complie;                  //  重编译整个包
+        alter package xxx complie specification;    //  重编译包规范
+        alter package xxx complie body;             //  重编译包体
+	
+
+* 触发器
+  触发器类型
+    DML 触发器
+    instead of 触发器
+    系统触发器  包括响应系统事件和 DDL 操作
+  触发级别
+    语句级  对每个命令只触发一次,默认级别
+    行级    对命中所涉及的每个记录触发一次
+  DML 触发器
+    create [or replace] trigger xxx
+    before|after event_list [of column] on xxx  //  event_list 为 insert [or update or delete]
+    [for each row]                              //  声明触发器为行级触发器
+    [when (condition)]                          //  行级触发器专有
+    [declare]
+    begin
+    exception
+    end xxx;
+    * 在程序体中可以通过 inserting , updating , deleting 三个布尔变量判断程序在进行的 DML 操作
+    * 行级触发器引入了 :old 和 :new 两个标志符,记录型变量,分别存储 DML 操作后的原始值和更新值,如果在 when 中引用不用加 :  
+	  //   使用时 :old.column_name
+  instead of 触发器
+    建立在视图的触发器,对视图的 DML 操作转由触发器来对表执行,所以也叫替代触发器,针对拒绝直接操作的复杂视图
+    必须是行级触发器,因为需要用到 :new 
+    触发器在内部拆成多个表来执行
+    create [or replace] trigger xxx
+    instead of event_list [of column] on xxx
+    for each row                                //  必须有的
+    [when (condition)]
+    [declare]
+    begin
+    exception
+    end xxx;
+  系统触发器
+    系统事件(logon,logoff,startup,shutdown,...)
+    DDL 操作(create,alter,drop,rename,grant,...)    未指定操作的对象,如表,视图之类的
+    create [or replace] trigger xxx
+    before|after event_list on database|schema
+    [when(condition)]   
+    [declare]
+    begin
+    exception
+    end xxx;
+    * 系统触发器特有属性,常用如下:
+        ora_login_user          登录用户
+        ora_dict_obj_type       操作对象类型
+        ora_dict_obj_name       操作对象名称
+        ora_dict_obj_owner      操作对象所有者
+        ora_database_name       数据库名
+        ora_sysevent            系统事件名
+        * 以上属性所有者为 sys ,所以使用时需要加上 sys. 
+  变异表,指的是用户触发器(系统触发器不会引发变异表)
+    触发事件为 DML 操作的表,针对行级触发器,如果触发器只是插入一条语句则不会被当成变异表,只有这一个特殊的例外
+    触发事件为 delete cascade 的语句级触发器所操作表
+    变异表对行级触发器不可读与操作,可以使用语句级触发器(可以用一个包定义一个共享变量,连接行级触发器与语句级触发器)
+  * 触发器存储在单独的名称空间,所以可以与其他对象同名
+  * 可通过 user_triggers 查看触发器的源代码

@@ -1,0 +1,47 @@
+× 提交的时候会将索引当前的内容和之前的提交快照进行比较，得出变化的内容，只改动这些内容，其他采用引用
+× 提交的引用
+	id		绝对提交名
+	symref	符号引用，symbolic reference
+			× 本地特性分支  		.git/refs/heads/
+			× 远程跟踪分支		.git/refs/remotes/
+			× 标签				.git/refs/tags/
+	× git 内置常用符号链接有
+		HEAD		始终指向分支的最新提交，通过 checkout 可以暂时改变 HEAD 的指向，默认 ref:refs/heads/master
+		ORIG_HEAD	在合并或复位操作时，会产生 ORIG_HEAD 指向之前的 HEAD，ORIG_HEAD 只能有一个
+		FETCH_HEAD	使用 git fetch 抓取远程库的所有分支头记录
+		MERGE_HEAD	进行融合操作时保存融合的各分支头记录
+		× 上述引用的内容保存在 .git 文件下，都不是保存在 .git/refs 中，除了 HEAD 是一个指向 heads/master 的引用
+		× 使用 git symbolic-ref 可以用来管理符号链接
+	^		相对提交名，当存在合并分支时，合并点有多个父提交，^n 表示第 n 个父提交，如 HEAD^3，等价于 master^3，分支名表示分支的最新提交
+	~		相对提交名，~n 表示倒数第 n 个提交，如 HEAD~3 表示 HEAD 倒数第 3 个提交，需要注意的是 HEAD^1 和 HEAD~1 等价
+× 查看历史记录
+	git log
+		--pretty=oneline	每个提交显示一行
+		--abbrev-commit		缩写提交对象的 id（abbrev=abbreviate）
+		--stat				显示版本修改了几行
+		${start}..${end}	两个提交对象之间的范围，是右连续，比如 master~3..master~1 表示倒数第二和第一，注意是从大到小
+		^${start} ${end}	功能同上
+		${start}...${end}	对称差，两者的并减去两者的交，start 和 end 顺序可颠倒
+		范围查询相当于集合差，{end-start}，当运算发生在两个分支时，end 所属分支要剔除所有 start 所属分支的所有 commit，包括共享的 commit
+		当多分支范围运算时一般用 ^ ，如 git log ^dev ^topic ^bugfix master
+	提交图，git 使用的布局是有向无环图 DAG，从各分支的最新 commit 一直指向到最后的初始 commit，可以通过 gitk 查看
+× 查看提交
+	git bisect，一个很有用的二分查找方法，当当前版本为错误时，又模糊的知道哪个版本是正确的，在这个范围中用 bisect 就能很快找出最近的正确版本
+		git bisect start 			bisect 是个过程查找，需要声明开始
+		git bisect bad [HEAD]		指定错误 commit，因为当前版本是错的，而 HEAD 是可以省略的
+		git bisect good ${right}	指定正确 commit，通过正确与错误版本就可以确定查找范围
+		git bisect good				开始查找，bisect 会将中心版本一个一个列出来，在工作目录可以查看，然后手动告诉 bisect 这个版本是好的还是坏的
+		git bisect good				好的就使用 good
+		git bisect bad				坏的就使用 bad
+		......						如果一直找，到最后会只剩一个
+		git bisect reset			找到版本后记住正确的版本 id，然后使用 reset 回到主分支结束 bisect
+		× 每次查找时工作目录都会改变到当前查找的状态
+		× 如果查找到一半太混乱，可以使用 git bisect replay 重新开始
+		× bisect 查找是通过一个 detached HEAD，通过 git branch 可以查看当前所在分支，会显示 ‘* (no branch, bisect started on master)’
+		× bisect 只是用于查找正确版本，不能用来重置版本，重置到正确版本需要
+			git checkout ${right_id}			定位到正确的版本
+			git checkout -b ${new_branch} 		在此版本创建一个新分支，-b 表示创建新分支
+			git branch							将 HEAD 显示当前在新分支上
+			× git 中的所有操作都需要知道当前位置，即一切以 HEAD 为基础，如果使用 symbolic-ref -d HEAD，则所有功能将不能用
+	git blame，查看问责，不会用
+	git log -S... ，以 -S 开头的命令如 -Sinclude，-Sstring 的 git log 称为 Pickaxe，不会，据说是暴力考古		

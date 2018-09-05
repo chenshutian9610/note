@@ -1,0 +1,82 @@
+× DHTML 即 Dynamic HTML，由结构层，表示层和行为层组成
+    结构层由 HTML 的标签组成
+    表示层由 CSS 负责创建
+    行为层是 javascript 和 DOM 主宰的领域
+    × 网页的表示层和行为层总是存在的，即使是没有定义过，不同的 web 浏览器都会将自己默认样式和事件处理函数加载网页结构中，
+	  如鼠标悬停显示标题之类的功能
+
+-------------------------   表示层与行为层
+* 所有和样式有关的属性都要通过 style 标签或节点的 style 属性访问
+  1.<style>
+		p{color:red}
+	</style>
+  2.<p style='color:green'>hello</p>	//	注意没有 {} 
+  3.element.style.color='red';
+× CSS 的属性格式为‘属性：值’，当有多个属性时用分号隔开
+    margin-left:10%;
+    text-indent:0.5in;  //  in -> 英寸，也可以使用 px   
+    font-size:12pt;
+× 在标准情况下可以使用 window 对象的 getComputedStyle 方法来获取标签的样式信息，其含有两个参数，元素名与空的字符串
+  但在 IE8 之前的浏览器没有定义这个方法，其使用元素的 currentStyle 方法
+  可以选择使用通用方法  var info=window.getComputedStyle?window.getComputedStyle(element,""):element.currentStyle;
+× 在 CSS 中当一个属性名由多个单词组成时，由 - 来分开单词，如 font-family，text-indent 等
+  而在 javascript 中访问这些属性时采用 camel 记号来分开多个单词（首字母大写），即 fontFamily，textIndent 等
+× 设置样式信息
+    通过属性设置，如 document.querySelector('p').style.color='blue';(每个节点都有一个 style 属性) 
+    脚本化 CSS（类选择符，id 选择符和标签选择符）
+        .test{							//	. 表示类选择器，在 javascript 中 class 为保留字，所以使用 className 来访问
+            background-color:yellow;
+            font-weight:bold;
+        }
+× 位置信息通常由 CSS 负责创建，相关的属性有
+    position    默认为 static，html 标签必须按定义的顺序显示，top 和 left 属性将失效
+				当设置为 absolute 或 relative 时，被配置的标签可以在任意地方，不受限制
+				设置为 ralative 时将节点移动到别的位置后，原来位置所占的空间仍然保持着，但没什么用，所以一般使用 absolute
+    top/bottom  距离最上面或最下面的边距，单位为像素（px），一般只是用其中一个，下同
+    left/right  距离最左边或最右边的边距
+        p{
+            position:absolute;    
+            top:50px;
+            left:100px;
+        }
+× javascript 有两种方式来控制元素的可视性，分别是 visibility 和 display 属性
+    visibility  取值为 hidden 时元素隐藏（但其所占位置还在），取值为 visible 时可见
+    display     取值为 none 时元素隐藏（同时其所占位置消失），取值为 block 或 inline 等值时产生不同的显示效果
+× 动画效果包括渐进移动和颜色渐变（rgb值的调整），都是通过 setTimeout 或 setInterval 来实现的
+    function changeColor(){
+    var ul=document.querySelector('ul');
+    var init=window.getComputedStyle(ul,"").color;              //  getComputedStyle 得到的是计算过后的值，只读
+    var r=parseInt(init.substr(init.indexOf('(')+1))+10;
+    var g=parseInt(init.substr(init.indexOf(',')+1))+10;
+    var b=parseInt(init.substr(init.lastIndexOf(',')+1))+10;
+    if(r>=255) r=255;
+    if(g>=255) g=255;
+    if(b>=255) b=255;
+    ul.style.color='rgb('+r+','+g+','+b+')';
+    var id=setTimeout('changeColor()',100);                     //  在函数里面使用自身可以得到 setInterval 的效果
+    if(r==255&&g==255&&b==255)
+        clearTimeout(id);
+    }                   
+    × javascript 中颜色的表达有三种，
+        #ffffff				//	十六进制表示，以 # 开头
+		rgb(255,255,255) 	//	字符串表示
+        white				//	颜色英文表示
+
+------------------------- javascript 错误调试方法
+× try-catch-finally 语句，完全照搬 java，区别在于 catch 捕捉的是 error 而不是 exception，error 对象含有 message 属性
+  error 对象可以是内置错误，即发生错误时自动生成，也可以是自定义错误，自定义错误需要手动抛出（throw）
+    throw new Error('something error')  //  ‘something error’为 error 对象的 message 属性
+    throw 1234                          //  1234 就是 error 对象
+  每个浏览器都带有一个控制台，其为 javascript 调试所用，当发生错误时可以在控制台中查看到错误的原因
+  可以通过 console 对象的方法输出信息到控制台，注意，使用这些方法不会抛出异常，只是单纯的往控制台传输信息而已
+    error   如 console.error('error now') 向控制台传输语句，控制台将带有红色警告标志
+    warn    控制台将带有黄色警告标志
+    info
+    log
+  在浏览器中可以使用断点调试，在 source 选项卡中
+  常用 JSLint 来对 js 脚本语法和规范进行检测，流行的前端工具都带可以安装此插件，其有 javascript 所写
+  用 YUI Compressor 来压缩脚本，其由 java 所写，是一个 jar 包，压缩时使用以下语句
+    java -jar yuicompressor-x.x.x.jar --type js --charset utf-8 -v src.js>packed.js
+    × 如果压缩对象为 css 文件，将 type 改为 css 就行了
+    × 压缩的意思为将里面的注释和多余的空间（换行符，空格，缩短变量名等）去掉且不出现语法错误
+  

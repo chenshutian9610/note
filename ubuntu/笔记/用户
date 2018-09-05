@@ -1,0 +1,47 @@
+ubuntu有三种用户：
+超级权限用户（UID为0）
+系统用户（系统服务使用的账户，UID为1-499）
+普通用户（分为标准用户和管理员，UID为1000-65534，除Ubuntu外的其他Linux为500-65534）
+
+ubuntu有三种组，超级组，系统组，用户组，GID与用户UID分类一样。
+
+Ubuntu默认不提供root账号，所以不能像其他Linux一样直接用su提升权限
+  使用sudo -i或sudo su root转化为root账户
+  使用su user转化为相应用户，如su free
+
+用户配置文件存放在/etc/passwd，用户配置文件不保存密码
+每一行为一个用户，格式为“账户：密码：UID：GID：注释：主目录：shell”
+例如：root:x:0:0:root:/root:/bin/bash
+
+用户密码文件存放在/etc/shadow，密码使用MD5加密
+一般看前两个字段“账户：密码”，如果密码字段为空则无密码，如果为！则账号被禁用
+例如：root:!:17549:0:99999:7:::
+
+组配置文件存放在/etc/group
+一般看最后一个字段，组成员列表
+如：sudo:x:27:free
+
+组密码文件存放在/etc/gshadow
+格式为“组名：组密码：管理员：成员”
+如：sudo:*::free
+
+用户与组是多对多的关系，创建一个用户的时候默认创建一个同名的组，为该用户的主要组，随后添加的组为次要组
+
+---------------- 操作用户的命令 --------------------
+添加用户
+adduser username
+新添加的用户的主目录是对/etc/skel的复制（该配置位于/etc/default/useradd）
+
+更改用户密码    passwd 【username】
+锁定与解锁用户  passwd -l/-u username
+
+删除用户 deluser【--remove-all-files】username
+
+groups【username】 查看用户的所有组
+id【username】显示用户的uid和所属的一堆组的gid
+
+who 显示系统当前所有登录的用户tty1-7
+last【-n】显示历史登录用户tty1-6，加上选项可以显示前n条
+
+通过“用户账户”可以管理用户
+通过sudo apt-get install gnome-system-tools安装“用户和组”可以管理用户和组

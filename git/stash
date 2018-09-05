@@ -1,0 +1,28 @@
+× 储藏（stash），以栈的形式将脏的工作目录与索引 save 到储藏栈，等到要用的时候再从储藏栈中 pop 出来，常用子命令如下
+	save（默认）		储藏脏的状态，工作目录和索引变回 HEAD 状态
+	pop				将栈顶推出到工作目录和索引中，有时会引发冲突
+						如果不引发冲突，则 pop 后会将该元素从栈顶删除
+						如果引发冲突，需要手动修改冲突文件，栈顶元素会仍然保存着，需要手动删除
+	apply			读取栈顶元素到工作目录和索引中，不会删除栈顶元素
+	drop			删除栈顶元素
+	× save 时如果没有设置储藏信息就会使用默认的储藏信息，可以自己设置，直接在后面加上信息字符串就行了，不用加 -m，如 git stash save 'initial'
+× 查看储藏
+	git show-branch stash	显示栈顶元素
+	git stash show			显示栈顶元素，在后面接上 stash@{n} 可以访问其他元素，栈顶为 0，顺序依次递增
+							什么选项都不加时相当于 --stat，可以加上 -p 显示差别
+	git stash list			显示栈中所有元素，元素 id 为 stash@{n}
+× 储藏常用选项
+	--include-untracked		包含未被追踪的文件
+	--all					包含被忽略的文件
+× 引用日志（reflog），git 默认开启 core.logallrefupdates，如果关闭则不会有引用日志，reflog 与 .git/logs 息息相关
+	reflog 会记录你的所有操作，不只 commit 还有 rebase 之类的操作，标识 id 为 HEAD@{n}，可以通过 git show HEAD@{5} 之类的命令查看其内容
+	储藏就是通过 reflog 来实现的，如果 reflog 关闭则储藏会失效（因为没有了 stash@{n}）
+	reflog 会保存所有可达与不可达的提交，不可达的提交会在一个月后过期，可达则是三个月（log 中的可达提交是永远保存的，两者不一样）
+	reflog 常用子命令
+		show（默认）
+		delete			删除条目
+		expire			使条目过期，如 git reflog expire --expire=now --all
+× 其他
+	git show-branch -a
+	git commit --dry-run	没什么用，相当于 git status
+	git gc					手动调用 gc

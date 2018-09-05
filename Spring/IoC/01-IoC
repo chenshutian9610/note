@@ -1,0 +1,31 @@
+* BeanFactory 容器初始化时不会初始化其内的 bean，如果要配置后处理器，需要手动注册
+	ApplicationContext 容器初始化时会初始化所有非延迟加载的 bean，并且会自动注册所有后处理器
+
+* bean 生命周期
+		根据 InstantiationStrategy 实例化 bean（如果注册了 InstantiationAwareBeanPostProcessor 则调用）
+		BeanWrapper 读取 BeanDefinition 中数据来对实例化后的 bean 进行属性注入
+		（如果注册了各种 Aware 接口，如 BeanFactoryAware，ApplicationContextAware 等，在这里被调用）
+		init-method（如果注册了后处理器，在这里被调用）
+		destroy-method
+		
+* ApplicationContext 容器初始化（初始化容器的时候需要使用日志记录框架，如 log4j）
+		读取配置文件，为每一个 bean 生成 BeanDefinition 对象，然后注册到容器的 BeanDefinitionRegistry 中
+		使用工厂后处理器对 BeanDefinition 进行完善（可能使用了外部属性文件或 SPel）
+		注册后处理器
+		初始化国际化信息功能
+		初始化事件广播器
+		初始化其他特殊功能
+		注册事件监听器
+		实例化 BeanFactory
+		发布刷新结束事件，注册容器
+		
+* （参考）
+	在 AbstractApplicationContext 中有以下代码，用于容器对象的初始化
+  this.invokeBeanFactoryPostProcessors(beanFactory);		//	调用工厂后处理器处理不完全的 BeanDefinition，转化占位符等
+  this.registerBeanPostProcessors(beanFactory);					//	注册后处理器
+  this.initMessageSource();															//	初始化国际化对象容器（使得容器可以使用 getMessage，见下文）
+  this.initApplicationEventMulticaster();								//	初始化事件广播器，一般使用默认的 SimpleApplicationEventMulticaster
+  this.onRefresh();																			//	其他特殊初始化
+  this.registerListeners();															//	注册监听器
+  this.finishBeanFactoryInitialization(beanFactory);
+  this.finishRefresh();																	//	发布刷新结束事件

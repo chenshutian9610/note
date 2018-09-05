@@ -1,0 +1,105 @@
+* SAX解析器	characters事件遇到回车和空格也会触发
+
+* jsp页面运行时会被转化成servlet类的java文件，存放在tomcat\work\Catalina\localhost\jsp\org\apache\jsp\中，jsp为自定义的WEB服务目录
+
+* Tomcat处理post和get方法时默认使用iso-8859-1编码传输
+
+* post可以通过request的setCharacterEncoding方法改变传输方式
+  get因为是把参数插在url后面所以没办法通过这种方法，只能通过修改server.xml（在connector标记添加URIEncoding="GB2312" ）
+  默认情况，get直接把表单内容转化为iso格式传输，post先把表单内容按jsp编码格式编码，再使用iso格式传输
+  uri：Uniform Resource Identifier
+
+* utf-8为不定长字符编码，汉字为三个字节，英文字母为一个字节
+  java内部使用Unicode编码存储数据，不管汉字还是英文统一两个字节，所以char型为两个字节
+  但一般编写不管是英文还是中文的网站都是用utf-8格式，因为一个网站也包含若干个英文字母
+
+* HTTP协议：超文本传输协议，“请求与响应”协议
+  HTTP请求：请求行，请求头，可能的信息
+            get/hello.htm HTTP/1.1
+            Host:www.sina.com.cn
+            ......
+  HTTP响应：状态行，响应头，信息体
+            HTTP/1.1 404 object not found 
+            ......
+  响应状态： 200 请求成功
+            404 资源不可用
+            408 请求超时
+            500 服务器发生错误
+
+* html中: text:             size,maxlength
+          radio/checkbox:   name相同,align,checked
+          textarea:         rows , cols , wrap (practical)
+          table:            tr（行）,th（明显的表格）,td（普通的表格）
+          select:           option(value)
+          bgsound:          src,loop（播放次数，为-1为重复播放）
+          image/embed:      src
+          a:                href（url||url ? key1=value & key2=value）
+          一般都有width和height
+
+* request对象常用方法:
+                  getParameter            
+                  getParameterValues      //  一般是接收 checkbox 的数组
+                  getServletPath          //  得到 web 目录中 servlet 路径，如 /start.jsp
+                  getContextPath          //  得到 web 目录路径（/ + 名字），如 /web
+                  getServerPort
+                  getServerName
+                  getRemoteHost             
+                  getRemoteAddr           
+
+* response对象常用方法:   
+                  setContentType(MIME)    					//  一般在 if 或 事件 后面
+                  addHeader(head,value)  					//  head格式: host:127.0.0.1:8080/jsp/text.jsp
+                  setHeader(head,value)   					//  response.setHeader("Refresh","5");  每五秒刷新一次
+                  sendRedirect(url)       					//  重定向，无法传送数据
+                  setStatus(int)          					//  response.setStatus(408)
+                  encodeURL(url)/encodeRedirectURL(url)     //  下面（session 知识点）
+
+* 每个session有唯一的id，存放在用户浏览器的cookie中
+  session相关方法：
+                  getId                                      //  Id 第二个字母为小写
+                  encodeURL(url)/encodeRedirectURL(url)      //  response方法
+                  {
+                  当用户端不支持cookie时可通过这种方法维护会话，在底层把当前页面的session的id写进要进入的url，
+                  格式为 url;jsessionid=xxxxxxx ，然后把重写后的 url 写在加载项就行了
+                  String s=response.encodeRedirectURL("one.jsp");
+                  <a href="<%=s%>"> load </a>
+                  }
+                  setAttribute(key,value)                    //  添加或设置session的自定义属性，本身的id不在此列，所以可以自定义一个id进去
+                  getAttribute(key)                          //  得到的对象是object类，需要进行强制转化
+                  removeAttribute(key)
+                  getAttributeNames                          //  Enumeration类，在java.util包中，常用方法为hasMoreElements/nextElement
+                  {
+                  package java.util.Enumeration;
+                  ......
+                  Enumeration<String>s=session.getAttributeNames();
+                  while(s.hasMoreElements())
+                      out.println(session.getAttribute(s.nextElement())+"<br>");
+                  }
+  当session 使用了invalidate方法 或 超过最长发呆时间 或 服务器关闭 ，session会失效
+  可以修改web.xml文件来改变session的发呆时间，单位为分钟，下面被设置为 2分钟
+      <session-config>
+          <session-timeout>2</session-timeout>
+      </session-config>                  
+  与session生存周期相关的方法：
+                  getCreationTime             //  毫秒,可以使用new Date（）化为具体时间，需要java.util
+                  getLastAccessdTime          //  毫秒
+                  getMaxInactiveInterval      //  秒
+                  setMaxInactiveInterval      //  秒
+                  isNew
+                  invalidate
+  总结：session内容主要是三方面： 建立会话 ， 存储数据 ， 生存周期
+
+* application,作用范围为整个web服务目录，不同用户可以共享，其方法与session存储数据时的一样（attribute）,
+  并可以使用getServletInfo方法。因为有共享性，所以对其操作需要 同步处理synchronized 。
+  
+  有些服务器不支持直接使用application对象，需要使用getServletContext初始化
+  ServletContext application;                 //  application是ServletContext类，在<%! %>中声明
+  application=getServletContext();            //  在不知道服务器是否支持application对象时，尽量在<% %>以外的地方初始化，避免冲突
+  
+  tomcat支持内置application，该对象为servlet类的service方法中的final型对象，并且已经初始化过。
+  在jsp中<% %>中的操作即为service方法中的步骤，所以不能在里面有语句 application=getServletContext(); 
+  jsp的service方法语句如下
+  final javax.servlet.ServletContext application;
+  application = pageContext.getServletContext();
+  
+  可参考 “ My jsp / 留言板 ” 文件夹中input_word.jsp,show_word.jsp及其被转译的java文件

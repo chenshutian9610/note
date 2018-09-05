@@ -1,0 +1,36 @@
+× JSP 指令标记（静态），常用有两种，page 和 include，定义在 <%@ %> 里面
+	page 指令常用选项有 
+		contentType		指定传输的 mime 型和网页编码，默认为 text/html;charset=gb2312
+		import			导入 java 包
+		info			定义全局字符串，可以使用 getServletInfo 得到
+	include 指令常用选项有 file，用来包含一个文件，有助于实现代码复用
+		× page 的 contentType 只能被指定一次值，所以被包含的文件的 contentType 要和主文件一致，或是不要使用 contentType
+		× 被包含的文件在加载时会被静态合并到主文件中，所以不用包含 html 和 body 此类标记
+		
+× JSP 动态标记，常用的有四种，include ，param ，forward 和 useBean，定义在 <jsp:xxx /> 中
+	include 指令含有 page 选项，和静态 include 不一样
+		× 动态 include 在 jsp 页面加载的时候不会被合并到主页面中，它是一个独立的页面，但是一样没有 html 和 body 等标记
+		× 动态 include 可以使用 param 子标记，给属性赋值，更加灵活
+			<jsp:include page="other.jsp">
+				<jsp:param name="name" value="chen"/>
+			</jsp:include> 
+	param 指令，就是一对键值对，拥有属性 name 和 value
+	forward 指令和 requestDispatcher 的 forward 一样，转向别的页面时，地址栏的 url 还是原来的 url，同时可以用来传送值
+		× forward 传送值必须使用 param 子标记，不然其效果就和 response 的 sendRedirect 差不多了
+	useBean 指令，用来使用 javaBean，含有 id，class|type，scope 三个常用选项
+		× class 表示如果指定的 bean 在 pageContext 中找不到则创建，而 type 不创建
+		× 与 useBean 配套的动作标记有 setProperty 和 getProperty，含有 name ，param ，value ，property 四个常用选项
+		
+× JSP 其他常用符号
+	<%! %>		声明成员变量和方法
+	<%  %>		java 程序片，JSP 翻译成 servlet 类时程序片包含在 service 方法中
+	<%= %>		java 表达式
+	<%-- --%>	JSP 注释
+	<!-- -->	html 注释
+
+× url 后面的特殊符号
+	? &
+	#	前两种用来携带信息，对服务器是有效的，而 # 表示位置信息，只对浏览器有效，会自动滚动到所值位置的可视区域中
+		# 后面的变量为 html 中标签的 name 或 id，如 #print 指的是 <div id='print'> 这种的
+		要注意，当传输颜色时，如 baidu.com?color=#fff，服务器直接受到 color=，后面的 #fff 被当成位置符自动忽略
+		传输颜色时可以使用 %23 代替 #，如 baidu.com?color=%23fff

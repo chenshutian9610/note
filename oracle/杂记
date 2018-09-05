@@ -1,0 +1,118 @@
+* 在命令行输入 set oracle_sid=xxx 设置默认数据库名
+
+* 常用环境变量  pagesize , linesize , time
+
+* show parameters 支持模糊查询,如 show parameter undo 将显示所有带 undo 的参数
+
+* select * from tab 可以查看当前模式的所有表
+
+* 在 OEM 中的服务器选项中可以查看和设置物理逻辑存储结构的选项和初始化参数
+
+* 有一些对象的修改不用 alter ，而是 create or replace 直接替换
+
+* archive log list 查看数据库是否在归档模式中
+  启动数据库到 mount 状态 > alter database archive log; > 启动数据库
+  alter system set archive log start    //  设置初始化参数的归档模式
+  alter system switch logfile			//	切换日志文件组
+
+* scope 系统初始化参数更改后应用的范围，有三种形式，spfile ，memory， both
+	spfile 	更改参数，但不更改内存，下次重启数据库后生效,针对静态参数
+	memory	更改内存，但不更改参数，下次关闭数据库后失效
+	both	同时更改参数和内存，scope 默认为 both
+
+* 在 win 系统下创建数据库会遇到不能配置 em 的情况，需要启动 net manager 给监听程序添加新地址，
+  主机名为电脑名称或 ip ，端口不变。相当于配置 listen.ora
+
+* 标准 sql 语言分五种，DDL , DML , DQL , 事务处理，会话处理，系统处理
+
+* 数据库中有两种视图，数据字典视图 dba|user|all ，动态性能视图 v$ ，前者一般和逻辑结构有关的对象，后者一般是物理结构
+  动态性能视图是动态创建，动态销毁的，主要来源于 sga ，控制文件，数据库对象运行相关信息
+  使用视图需要管理员权限  
+  select value from v$parameter where name='control_files';
+  可通过 desc 查看视图的设计
+
+* 初始化参数
+    sort_area_size      //  临时段排序区大小
+
+* oracle 有一个特殊的表 dual(临时表,不存在具体的结构,只返回查询的结果),经常会需要用到它
+	select 1+5 from dual;						//	5
+	select userenv('language') from dual;		//	查询字符编码
+	
+* 注意
+  * 使用 passw 或 password 可以更改当前用户密码
+  * 登陆时的数据库连接串在 tnsnames.ora 中定义，该配置文件放在 dbhome_1/network/admin 目录中
+  * show rel[ease] 显示数据库例程的内存分布情况
+  * 全局数据库名，SID 和连接串一般是相同的，但也可以互不同
+	全局数据库名 	数据库的名字
+	SID				数据库的系统唯一标识符
+	连接串			conn wanna/0009 @oracle，@ 后面的语句就是连接串
+  * 例程==实例
+  * 事务处理需要注意
+	执行 ddl 操作时会把先前的所有操作提交
+	事务是针对 dml 操作的，不能作用在 ddl 语言上
+	-----------------------
+	delete from test where id=1;
+	create table t(id number);	//	不管创建表是否成功都会先执行一次 commit
+	rollback;					//	rollback 什么效果都没有，不能撤销表的创建
+  * initial，next 和 pctincrease 
+	initial 表示第一个分配的区的大小
+	next 	表示第二个分配的区的大小，与 initial 和 pctincrease 的值无关
+	pctincrease	表示第三个和之后的区的百分比增长（较之前一个区的增长）
+	------------------
+	create table test(id number(4)) 
+	tablespace users
+	storage(initial 100k,next 50k,pctincrease 0)
+	第一个区大小 100k，第二个 50k，第三个及之后都是 50k（因为增长百分比为 0，如果为 100 的话，第三个为 100k，第四个为 200k ...）
+  * 在删除含有巨大数据量的表中所有数据时，使用 truncate 比 delete 快很多，
+	因为 truncate 只在日志文件中记录一个操作而 delete 是一行一个记录，
+	但是 truncate 不能使用 where 语句
+  * 在 select 语句中使用 rowid 和 rownum 关键字（rownum 为行号），但要注意给原来的字段加上表名
+	-----------------------
+	select rowid,rownum,test.* from test;	//	如果不是查询全部的话可以不在前面加上表名，如 id，name 之类的
+  * 时间格式
+	d 表示星期几，使用时要注意，星期日为 1，星期一为 2，所以使用时要减去 1 
+	dd 表示几号
+	--------------
+	select to_char(sysdate,'d')-1 from dual;	//	to_char 返回字符串，但是进行 -1 时会隐式转换为数值型
+  * 匿名 pl/sql 程序块指的是一般的 pl/sql 程序，有名的 pl/sql 程序块指的是过程和函数
+  * pl/sql 程序名的有效 id 长度为 30 位
+  * declare
+	  x exception
+	  exception_init(x,-20000);					//	绑定异常
+	begin
+	  raise_application_error(-20000,'error');	//	为异常绑定错误信息
+	exception
+	  when x then
+	    dbms_output.put_line(syserrm);
+	end;
+  * 存储过程和函数是存储子程序，是被命名的 pl/sql 程序块，以编译的方式存储在数据库中，所以比匿名程序块执行速度要快
+  
+* 数据类型
+    字符  (n[byte|char])  默认 byte
+      char            定长字符型，字符不够 n 则用空格填充
+      varchar2        不定长字符，字符不够 n 仍然按原字符长度存储
+      nchar           国际标准，unicode，下同
+      nvarchar2
+      long            可变长度字符串，2GB，前面的只有大约 4KB
+    数值  [(m,n)]      m 为总位数，默认 38；n 为小数位数，默认 0
+      number
+    日期
+      date            需要修改参数 nls_data_format 或使用 to_date 函数  
+      timestamp[(n)]  n 为秒的小数位数，默认 6 。比 date 多了小数
+    lob               大对象文件 large object ，最大为 4GB
+      clob
+      nclob
+      blob
+      bfile           定位器，即大文件的游标
+    二进制             可变长,只存取数值
+      raw(n)          最大 2KB，n 为字节长度
+      long raw        最大 2GB
+    行类型
+      rowid           物理地址的伪列类型
+      urowid          物理，逻辑，外部文件的行地址
+    raw 型是二进制存储, char 型是十六进制存储
+    通过 hextoraw 可以将十六进制字符串(0-f,超出则报错)转化为 raw 型数值,即将两个字节转化为一个字节
+      select hextoraw('1ddf') from dual;   //  1ddf
+      select hextoraw('gg') from dual;     //  错误,超出范围
+    通过 rawtohex 可以将二进制数值转化为十六进制字符串,即一个字节填充成两个字节,一般填充 3
+      select rawtohex('123') from dual;      //  313233 ,函数内部数值需要用冒号

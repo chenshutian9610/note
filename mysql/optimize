@@ -1,0 +1,57 @@
+× 使用 show status 命令可以查看一些参数来进行优化前的判断
+		connections			连接数据库的次数，如 show status like 'connections';
+		uptime					数据库上线次数
+		slow_queries		慢查询次数
+		com_select			查询次数
+		com_insert			插入次数
+		com_delete			删除次数
+		
+× 优化查询
+	可以使用 desc + select 语句来分析查询的效果，如 desc select*from test;（可以使用 explain 来代替 desc，一样的作用）
+	分析的结果中需要注意 key 和 rows 两个字段，分别是使用到的索引和查询时经历过几行，如果 key 不为 null 的话 rows 一般为 1
+	优化查询是通过在被频繁访问到的字段上建立索引（注意像上面那种没有带条件的查询是用不到索引的，一般需要 where id=1 之类的从句）
+	使用索引需要注意一下几点
+		× 建立索引可以优化查询速度，但是也会增加插入的开销
+		× 当使用 like 对索引字段进行检索时如果第一个字符为 %，则不会使用到索引，如 select*from test where name='%n'（假设在 name 上建立过索引）
+		× 建立多列索引时要注意，mysql 的多列索引只要有含有第一个索引字段，索引就会生效，而 oracle 必须含有前面所有索引字段才会生效，如
+				create index myIndex on tb(name,sex,age)
+				在 mysql 中建立了 name,name-sex,name-age,name-sex-age 四个虚拟索引，而在 oracle 中建立了 name, name-sex,name-sex-age 三个索引
+		× 使用 or 进行查询时要求两边都是索引段，否则索引不会生效，如 select*from test where name='chen' or id=3;（要求 name 和 id 都是索引段）
+		
+× 优化数据库结构
+	根据范式创建合理的表（把一个大表分成几个小表，需要时可以使用连接查询，如果连接查询过于频繁可以建立一个中间表来优化速度）
+	优化插入
+		× 插入记录时会同时更新索引，也会进行唯一性检查，当插入大量数据时可以先禁用这两个功能，结束后再打开
+				alter table ${table} disable keys;
+				set unique_checks=0;
+		× 插入多条记录时，load data > insert ${block} > insert ... ,insert ... , ...
+				insert ${block} 的意思是把多条插入语句当成一个块，insert ... ,insert ... , ... 表示一条一条插入，后者会加重服务器开销
+				insert into tb values('chen','m'),('lin','m');													快
+				insert into tb select * from tb2;																				快
+				insert into tb valeus('chen','m');insert into tb valeus('lin','m');			慢
+	调整表，	analyze|check|optimize table ${table}，返回一样的格式，分别是分析表，检查表是否有错误，优化表（只能针对 varchar，text 和 blob 进行优化）
+	
+× 使用缓存 query_cache
+	使用 show variables like '%query_cache%' 查询与缓存有关的变量，重要的如下
+		have_query_cache		是否配置了缓存
+		query_cache_size		缓存的大小，以 M 为单位
+		query_cache_type		为 on 时打开，为 off 时关闭，为 demand 时需要使用 select sql_cache 语句来查询，如 select sql_cache * from tb;
+												如果缓存打开又不想使用缓存可以使用 select sql_no_cache 语句来查询
+												
+× 优化多表查询，联合查询 > 子查询 > 一般查询
+		select name from student,class where student.cid=class.id and class.type='hign';				快
+		select name from student where student.cid=(select id from class where type='hign');		较快
+			
+× 优化表设计
+		对 InnoDB 来说使用 varchar 和 char 是一样的速度的，这一点和 MyISAM 不同
+		设计表时注意使用合适大小的类型，能选 smallInt 就不选 int，使用 char 或 varchar 需要带上合适的精度（尽量小）
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			

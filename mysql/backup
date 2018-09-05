@@ -1,0 +1,44 @@
+-------------- 备份 ----------------
+× 使用 mysqldump 备份数据库（ mysqldump -uroot -pfree ）
+	数据表级别，db1 tb1 tb2 > ~/tb.sql								备份数据库 db1 中的 tb1 和 tb2 两个表
+	数据库级别，--databases db1 db2 > ~/db.sql				备份 db1 和 db2 两个数据库
+	所有数据库，--all -databases > ~/all.sql					备份所有数据库
+	
+× 直接在操作系统上复制所有数据文件（对 MyISAM 适用，因为其是直接写入磁盘的，而 InnoDB 因为有事务管理，所以不会直接写入）
+	需要关闭数据库服务器，防止复制时有数据写入，但在关闭服务器之前需要使用 flash tables 将内存中的数据写入磁盘
+	
+× 可以使用第三方的 mysqlhotcopy 来备份，它是一个 Perl 脚本
+
+-------------- 还原 ----------------
+× 通过 mysql 命令进行还原，如 mysql -uroot -pfree [database] < ~/backup.sql 
+	其实就是单纯的登录数据库然后使用 source 执行 sql 文件
+	
+× 直接把复制出来的数据文件复制到数据库的 data 目录中，注意在 linux 中 mysql 的 data 目录的所有者和所有组都是 mysql，需要使用 chown -R mysql.mysql dir
+
+-------------- 外部表 ----------------
+× 导入导出外部表需要知道数据是怎么排列的，如记录怎么分隔，字段怎么分隔，常用选项如下(option) 
+		fields terminated by ${str}										字段通过什么分隔
+		fields [optionally] enclosed by ${str}				${str} 一般是单引号或双引号，用来包围字段，含有 optionally 时只对字符型数据有效
+		lines starting by ${str}											每个记录通过什么开始
+		lines terminated by ${str}										记录之间怎么分隔，默认为 \n ，在 win 下需要设置为 \r\n 才能表示回车
+		
+× 导出表
+	× 通过在 select 语句后面加上 into outfile ${file} [option]
+	× 通过 mysqldump 的 T 选项来导出到目标目录，如 mysqldump -uroot -p -T ~/Desktop db1 tb1 "--fields-terminated-by=," "--lines-starting-by=* "
+		因为是在命令行中执行的 option 里面的空格用 - 代替，并且每一个 option 都要使用双引号括起来，注意 T 是导出到目录而不是文件
+	× 通过 mysqldump 的 X 选项导出为 xml 文件，如 mysqldump -uroot -p -X db1 tb1 > ~/Desktop/tb1.xml
+	× 通过 mysql 来导出，就相当于先进入数据库后再使用命令导出，需要使用 e 选项使用命令
+			导出文本		mysql -uroot -p -e"select*from tb1" db1>~/Desktop/tb1.txt
+			导出 xml		mysql -uroot -p -X -e"select*from tb1" db1>~/Desktop/tb1.xml
+			
+× 导入表
+	使用 load data [local] infile '${file}' into table ${table} [option] 命令导入
+	使用 msyqlimport --no-defaults -uroot -p -T db1 tb1.txt [option] 命令导入，实际上也是在底层使用 load data 命令
+	× 使用 load data 命令时经常会导不进来，原因是 secure-file-priv 这个系统变量
+			当它为 null 时不允许导入导出
+			当它为某一目录时只允许导入那个目录的文件
+			当它为空时没有限制
+		所以使用 load data 命令前要修改 mysqld.cnf 中的 secure_file_priv 参数为空，然后重启 mysqld
+	× 解决了上述问题后使用 load data 命令还是出错，显示 permission denied，这时候在 infile 前加上 local 就行了
+		
+		

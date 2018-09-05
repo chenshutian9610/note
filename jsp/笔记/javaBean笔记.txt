@@ -1,0 +1,19 @@
+* javaBean需注意
+  类必须带有包名
+  类和类中的方法必须是 public 型
+  类的构造方法必须是无参的
+  类中的方法必须完全符合java代码规范，即 getXxx ，setXxx ，isXxx
+  类的class文件必须存放在WEB服务目录的 WEB-INF/classes 文件夹中，如：ROOT/WEB-INF/classes/mybean/text_bean.class
+  如果修改了类的字节码，则需要重启 jsp引擎
+
+* jsp 中使用 bean <jsp:useBean id="创建的对象" class="包名.bean名" scope="有效范围"/>
+  jsp引擎 接收到 jsp 的动作标记 useBean 指令时，先在其内置的 PageContext对象 中查找是否存在拥有相同 id 和 scope 的 bean对象，
+  如果有，则返回该对象引用；如果没有，则使用 class 指定的 bean类 创建一个 bean对象 ，并将该对象添加进 PagaContext对象 中。
+
+  scope 的取值从小到大为：page , request , session , application
+
+* 操作 bean 的属性值
+  <jsp:getProperty name="bean_id" property="bean_property" />                    //  相当于 <%=bean_id.getXxxx()>
+  <jsp:setProperty name="bean_id" property="bean_property" value="" />           //  value中的数值会自动转化为属性的类型，比如：int
+  <jsp:setProperty name="bean_id" property="*" />                                //  要求表单中元素的名字与 bean对象 的属性名相同
+  <jsp:setProperty name="bean_id" property="bean_property" param="参数" />       //  将表单中元素名为 param 的值赋给属性，属性方法需要含有encode方法

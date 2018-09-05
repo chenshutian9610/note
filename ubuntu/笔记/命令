@@ -1,0 +1,57 @@
+ls 
+   -a 显示所有内容
+   -r 颠倒显示内容
+   -R 递归显示内容
+   -c 按修改时间显示
+   -l 带有详细信息，相当于 ll
+
+rm 
+  -d 等同于rmdir
+  -r 递归删除目录，可以删除非空目录
+  -f 强制删除
+
+cp/mv/ln ${source} ${target}  
+  使用 -s 建立符号链接（软连接），必须使用绝对路径表示源，否则会在想不到的地方出错
+  ln -s /home/wanna/App/test/f /home/wanna/Desktop/f.lnk
+
+mkdir/rmdir [-p] directory    创建或删除空目录，-p 表示父目录，递归创建或删除
+
+pwd         显示当前路径
+cat         显示文本内容
+more        分页显示
+less        高级分页显示
+head -n     显示前n行
+tail -n     显示后n行
+od          八进制显示
+touch       建立空文件
+who         显示当前用户
+whereis     返回文件或命令的位置
+which       返回执行文件的位置
+runlevel    显示当前启动级别
+echo        返回字符串或变量的值，如 echo $PATH 返回环境变量路径
+
+comm 比较文件内容，以行为单位，使用之前需要保证文件是排序的，可以使用 sort 排序（sort 的结果是一次性的）
+    sort a > aa     不能使用 sort a > a，因为这样是先创建一个 a 后再给 a 排序，执行之后 a 为空
+    sort b > bb    
+    comm -12 aa bb  只显示 aa 和 bb 的相同内容
+diff 一样用于比较文件内容，但没有 comm 那么麻烦，不用 sort 也不用 -12
+    diff a b        只显示两个文件不同的地方
+
+grep 
+   -x 强制整行完全匹配
+   -w 强制关键字完全匹配
+   -i 忽略大小写
+   -E 匹配正则表达式
+   -m 匹配m次
+   -n 打印匹配行号
+   -r 在目录中递归查询
+
+find ${path} ${expr}
+  ${expr} 类型如下
+    操作符        -a -o !
+    测试表达式     -name，-type，-size，-mtime ...
+    动作          -exec，-ok（使用 '{} \;' 表示前面找到的内容）
+  ------------------------------
+    find ~ -name one -exec rm {} \;     等价于  rm `find ~ -name one`
+    find ~ -mtime -2 -a -type f         查找主目录下两天内被修改的普通文件
+  ------------------------------

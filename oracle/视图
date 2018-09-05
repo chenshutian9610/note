@@ -1,0 +1,24 @@
+---------- 物理存储结构
+	v$datafile
+    v$tempfile
+    v$logfile
+    v$controlfile
+	
+---------- 逻辑存储结构
+	v$tablespace
+    all|dba|user_ts_quotas
+	
+---------- 系统参数
+    v$database
+    v$parameter
+    database_properties             
+    v$diag_info			            //	可查看跟踪文件等的文件目录
+	v$session
+    
+---------- 源码
+    user_source                     //  存储程序的源代码(存储过程,函数,包)
+    user_triggers                   //  触发器的源代码
+	
+在 OEM 中 "服务器" 和 "方案" 这两个选项存储着系统的所有设置,
+在方案中可以通过 "视图" 选项查询数据库的所有视图,查询可使用通配符 ( * % _ ) 
+在 "视图" 中有些 v$ 被写成 v_$ ,如 v_$parameter ,搜索时要注意

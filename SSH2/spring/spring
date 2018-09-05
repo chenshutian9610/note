@@ -1,0 +1,97 @@
+× Spring 以 IoC 和 AOP 为内核，使用基本的 javabean 来完成 EJB 的工作
+  服务器端采用三层架构，表示层，业务逻辑层，持久层，Spring 对每一层都提供了技术支持
+  Spring 支持声明式事务，在配置文件中完成对事务的管理
+  Spring 对 javaEE 一些难用的技术进行了封装
+  Spring 以 bean 为管理单位
+  
+× Spring 采用分层架构设计，可分为以下几个大模块
+	Core Container				最核心的模块，包括 Beans ，Core（Ioc，Di），Context ，El 子模块
+	Data Access/Integration		Jdbc , Oxm , Orm , Trancaction , Jms
+	Web							Web , Servlet , Struts , Portlet
+	Aop
+	Aspects						Aop 框架
+	Instrument					类工具的支持和类加载器的实现
+	Test
+	× spring 有很多个 jar 包，最基本的是 core container 里面的四个模块包和第三方的 commons.logging 包（处理日志）
+	
+× IoC 容器
+	IoC，inverse of control，控制反转，创建实例不再是程序代码创建，而是交给容器，Spring 的 IoC 容器有以下两种
+		BeanFactory（org.springframework.beans.factory.BeanFactory）
+			它是一个接口，提供了完整的 IoC 服务的支持，其可以有很多实现方式，对应各种实现类，最常用的是通过 xml 实现
+			XmlBeanFactory：		BeanFactory factory=new XmlBeanFactory(new FileSystemResource("/home/wanna/applicationContext.xml");
+			× BeanFactory 在开发中比较少用
+		ApplicationContext（org.springframework.context.ApplicationContext）
+			同样是一个接口，继承于 BeanFactory 接口，一般也是通过 xml 实现，有两种常用的实现类
+				ClassPathXmlApplicationContext		从当前类的位置加载 xml 文件
+				FileSystemXmlApplicationContext		操作系统的绝对路径
+			× xml 文件名一般为 applicationContext.xml，名字可以改
+
+× applicationContext.xml
+	其和 hibernate.cfg.xml , struts.xml 存放放的位置一样（src 或 classes）
+	需要含有格式验证的声明
+		× 使用 doctype 声明 dtd 
+			<?xml version="1.0" encoding="UTF-8"?>
+			<!DOCTYPE beans PUBLIC 
+				"-//SPRING//DTD BEAN 2.0//EN" 
+				"http://www.springframework.org/dtd/spring-beans-2.0.dtd">
+			× 注意上面的 dtd 文件是 spring-beans，如果要使用 context，aop 等其他模块的话需要手动加上去
+			  dtd 文件不利于扩展，在 spring 中一般使用 xsd 文件
+		× 在 beans 标签中使用 xsd，在配置多个模块时要添加相应的 xsd 声明，可以在 Spring 文件夹中的 xsd-config.html 中找到说明
+			<beans 	xmlns="http://www.springframework.org/schema/beans"
+       				xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       				xsi:schemaLocation="
+						http://www.springframework.org/schema/beans 
+						http://www.springframework.org/schema/beans/spring-beans.xsd">
+			× xmlns 声明名称空间，xsi 前缀声明模式实例，schemalocation 声明 xsd 文件命令
+	beans { bean { property { ref } } }	
+		ref 指向前面声明过的 bean，使用 DI 方法将该 bean 注入到 property 属性中
+			× <property name="user" ref="user"/>
+
+* DI，dependency injection，依赖注入
+	IoC 以 DI 为基础
+	DI 可以通过三种方式注入，分别为 setter 注入，构造方法注入，接口注入
+	× spring 不支持接口注入，在其中最常用的是 setter 注入，Struts2 和 hibernate 有同样的特性
+	
+× bean 配置
+	id					bean 的唯一标识
+	name				bean 的别名，可以取多个
+	class				bean 的生成类
+	scope				singleton（单例），prototype（原型），request，session，global session
+	constructor-arg		通过 index 和 value 为构造函数的参数初始化，index 从 0 开始
+	property			对属性初始化
+	ref					引用其他配置好的 bean，可以替代 value
+	value
+	list				list 或数组类型的依赖注入
+	set					同上
+	map					同上
+	entry				map 的子元素，使用属性 key 和 value 初始化
+	× id 和 class 是必须的
+	× scope 默认是 singleton，意思为不管使用多少次 getBean 得到的都是同一个 bean 的引用，prototype 则是每次创建一个新的实例
+	  global session 仅在使用 portlet context 时有效
+	  spring 容器可以管理 singleton 的实例周期，而对 prototype 只负责创建
+	
+× bean 实例化（返回一个对象）
+	构造函数实例化	最常用的一种，bean 必须含有一个无参的构造函数
+	静态工厂实例化	使用静态方法来实例化（静态方法含有 return new class_name() 语句），需要在 bean 标记中使用属性 factory-method 指定静态函数
+	实例工厂实例化	在 bean 中使用 factory-bean 代替 class 指定一个实例，然后使用 factory-method 指定实例中的方法（与静态工厂一样）
+	× 以上三种如果包含参数，都可使用 constructor-arg 来赋值
+	
+× bean 装配方式（即属性注入方式）
+	xml 装配
+	自动装配	（不推荐）		通过 bean 的属性 autowire，常用的有 byName 和 byType，前者通过匹配名字实现自动装配，后者通过类型
+	annotation 装配
+		××××××
+		@Component（不推荐）	将类标志成一个 bean，以下的三个注解意思一样，名称不同只是为了规范，@Component（“user”）--> <bean id="user" .../> 
+		@Repository（DAO）
+		@Service（业务逻辑）
+		@Controller（控制器）
+	 	××××××
+		@Resource			默认通过名字实现自动装配，@Resource（name=“xxx”）--> <property ... ref="xxx"/> ，也可使用 type 属性实现 byType 自动装配
+		@Autowired（不推荐）	通过类型实现自动装配
+		@Qualifier（不推荐）	与 @Autowired 配合使用，达到与 @Resource 一样的作用
+		@Value				给属性赋值
+		× 注释以 @ 开头且没有分号，注释在类或属性声明前面使用
+		× 如果懒可以只知道 Component，Resource 和 Value，分别放在类和属性的前面
+	× 使用注释装配要在 applicationContext 的 beans 中引入 context 的 xsd
+	  	<context:component-scan base-package="xx.xx.xx"/>
+	  	× context 为定义的前缀，component-scan 为标记，base-package 指定注释所在的包（注意，是包，不是类）

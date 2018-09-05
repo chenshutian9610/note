@@ -1,0 +1,19 @@
+gcc常用选项-c（目标文件）-o（可执行文件）-g（带调试信息，可用于gdb调试）-I（头文件路径）-L（连接用的库）
+gdb常用子命令
+   file 	      后接可执行文件
+   list 	      列出源代码
+   break n 	      第n行设为断点
+   continue	      执行到下一断点
+   next		执行下一步
+   run		重新执行文件
+   quit		退出
+makefile格式
+   目标：条件
+   命令
+   例如：text.o:text.c
+         cc -o text.o text.c  //  cc默认为gcc
+ 	 clean： 	      //  伪目标	
+         rm -f *.o *.c        //  执行make clean时采取的动作
+         .PHONY：clean        //  显性定义为伪目标
+Autotools工具，包括autoconfig，aclocal，automake之类，用来创建configure和makefile.in模板
+源代码安装，./configure通过makefile.in创建makefile文件，make通过makefile创建程序，make install安装

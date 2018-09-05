@@ -1,0 +1,64 @@
+× 提交不是一成不变的，提交是可以改变的
+× 如果是已经发布的历史，最好是不要修改其中的提交，因为发布之后会被其他人克隆过去继续开发，更改提交一般是针对未发布的提交历史
+× reset
+	--soft			将 HEAD 的引用改为相应版本
+	--mixed（默认）	将 HEAD 的引用和索引改为相应版本
+	--hard			将 HEAD 的引用和索引和工作目录中的文件全部改为相应版本
+	× 如 git reset --hard master^
+× cherry-pick，将其他分支的历史提交添加进来，如果冲突需要修改，只是将指定提交添加进来而已，和合并不一样
+	如 git cherry-pick dev~4
+	× 如果没有发生冲突则直接将对方的提交信息当成当前提交的提交信息，并直接提交，不用使用 commit
+	× 发生冲突需要手动修改，手动 commit
+	× 可以通过此命令将其他分支的 commit 按自己想要的顺序添加进来，每次只能操作一个提交
+	× 新版本的 git 可以使用范围操作符一次添加多个提交，git cherry-pick master~5..master^
+× revert，意为撤销恢复，和 cherry-pick 原理一样，不同在于 revert 操作的是本分支
+	如 git revert master~2
+	× 正常是会发生冲突的，需要手动修改，手动 commit
+× checkout，严格说起来不是修改提交，而是检出提交，也可以用来检出某一提交的文件，其他命令的单位都是提交，没法提取单个文件
+	× 文件不是 git 的基本单位，所以使用时需要特殊的操作符，一般是 -- 和 : ，前者一般是路径方面，后者是成员的性质
+	× checkout 使用的是 -- 
+× commit，当要改变当前提交时，只要在提交的时候加上 --amend 选项就可以覆盖当前提交
+	如 	echo hello>>hello
+		git add hello
+		git commit --amend
+	× 提交的信息使用原来的
+	× 可以使用 --author 更改提交的负责人信息，如 --author 'chen <chen@qq.com>'
+× rebase，变基（改变基础）
+  git checkout dev
+  git rebase master
+  =================
+  git rebase master dev
+	× 上面两个部分效果是一样的，将 dev 的基点（与 master 的分叉点）改为 master 的 HEAD
+	× 变基和合并很相似，一样会引发冲突，变基的分支一般含有多个提交，而引发冲突时每次只能修改一个，每次修改完后，使用 add 添加到索引，然后使用一下选项
+		--continue	继续
+		--skip		跳过，有时候的确需要这个选项，但是慎用
+		--abort		中断，将一切复原到变基操作之前
+  git checkout master
+  git rebase -i master~3
+	× rebase 也可以在本分支进行，但一般加上 -i（全称 --interactive），用来重组基点之后的提交，上述例子的基点为 master~3
+	  使用上述命令编辑器会显示出以下文本
+	  	pick 2596423 add hello
+		pick 0abe05e nihao with zhongguo
+		pick 3f826ee china
+		× 顺序从新到旧，可以更改排序的位置，保存时提交的顺序会跟着 pick 语句的顺序改变
+		× id 前面的关键字默认是 pick，当使用的是 squash（挤），会将提交挤进前一个提交，如
+			pick 2596423 add hello
+			pick 0abe05e nihao with zhongguo
+			squash 3f826ee china
+			× 将 china 和 nihao with zhongguo 两个提交合并在了一起（china 挤进了 nihao*）
+			× 如果使用了 squash，保存退出时编辑器会再次显示一个画面，要求你设置提交信息，可以选择 china 或 nihao* 或自定义
+  变基时要注意的问题
+  × 如果变基的分支被其他分支所依赖，则如下（git rebase master dev）
+  	dev2:		   	m-n								m-n
+  				   /							   /
+  	dev:		x-y-z			-->				x-y	  x-y-z
+  			   /							   /	 /
+  	master:	  a-b-c-d						  a-b-c-d
+  	如果想要把变基分支与依赖其的分支一起移动，需要使用 git rebase dev^ dev2 把 dev2 移动到 y 点
+  × 如果变基的分支含有合并，则移动时如下（git rebase master dev）
+    			   	m-n-u							
+  				   / /							   
+  	dev:		x-y-z			-->					  x-y-z-m-n-u
+  			   /							   		 /
+  	master:	  a-b-c-d						  a-b-c-d
+  	git 会把合并的分支线性移动，如果想要整体不变的移动需要使用 --preserve-merges 选项，即 git rebase --preserve-merges master dev  			  

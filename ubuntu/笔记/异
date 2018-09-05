@@ -1,0 +1,24 @@
+数组
+  java {}
+  javascript []
+  shell ()
+
+转义字符
+  oracle 使用 escape 自定义转义字符
+  其他都是用 /
+
+if
+  shell     if test ... ;-then-elif-then-else-fi             if 后面需要 test 或 [ ] 来表示条件
+  oracle    if-then-elsif-then-else-end if;
+
+case
+  java 和 javascript        switch-case-defalut
+  oracle                    case-when then-else
+  shell                     case in - condition) ;; - x) - esac
+
+循环
+  oracle                    while ... loop - end loop;
+  shell                     while [...] do - done
+
+函数
+  shell                     func

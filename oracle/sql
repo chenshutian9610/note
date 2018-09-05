@@ -1,0 +1,149 @@
+* sql 语言分类
+    数据定义语言 DDL
+    数据操作语言 DML
+    数据查询语言 
+    事务控制语言 
+    系统控制
+    回话控制
+
+* 数据查询基础
+    select [all|distinct] xxx from xxx
+    [where condition]
+    [group by xxx [having condition]]
+    [order by xxx asc|desc]             
+
+    where 后的条件关键词
+        关系运算    = , > , < , != , ...
+        确定范围    [not] between and
+        确定集合    [not] in
+        字符匹配    [not] like              % (string) , _ (char) , escape 定义转义字符 , 如 escape 'x';  x_ 的值为 _
+        空值判断    is [not] null
+        逻辑操作    and , or , not
+
+    order by 
+        可以单列排序,也可以多列排序 ( 先按第一列排,再按第二列排,以此类推 )
+        可以使用列位置编号代替列名
+
+    聚集函数
+        count(*)        总记录数
+        count(column)   某列的非空记录数
+        avg             
+        max
+        min
+        sum
+        stddev          标准差
+        variance        方差
+    
+    分组查询*
+        以聚集函数为基础,可通过 having 实现分组后的条件查询
+        多列分组
+			不带任何分组函数的分组，假设有两列 x 与 y，先按 x 分组，然后按 y 做子分组，每个子分组再进行聚合函数的统计
+			rollup 			在本来基础上实现第一列（x）的统计，横向统计
+			cube   			在本来的基础上实现所有列（x，y）的统计，纵向统计
+			grouping sets 	相当于 cube 函数去掉基础的结果
+		---------
+			x	y	z 	
+			1	1	10	
+			1	2	20	
+			2	1	30	
+			2	2	40	
+			
+			select x,y,sum(z) from tb1 group by cube(x,y);
+			
+			x	y	sum(z)
+				1	40	*
+				2	60	*
+			1		30	*
+			1	1	10
+			1	2	20
+			2		70	*
+			2	1	30	
+			2	2	40
+			带 * 号为 cube 函数的效果
+			
+    连接查询
+        交叉连接        select name,school from info,school_info;   根据笛卡尔积形式连接,不显示重复
+        内连接          select name,school from info join school_info on info.id=school_info.id;    最常用
+        外连接
+          左外连接    left join ... on    符合条件都显示,不符合条件的只有左边的表显示,右边为空
+          右外连接    right join ... on   符合条件都显示,不符合条件的只有右边的表显示,左边为空
+          全连接      full join ... on    所有值都显示,符合条件的匹配,不符合条件的和空匹配
+        注意:表可以自己和自己连接
+    
+    子查询
+	select*from tb1 where (id,name)=(select id,name from tb2 where id=1)
+	select*from tb1 where (sex,year)in(select sex,year from tb2)
+	select*from tb1 where num>any(select num from tb2)
+		单行单列和单行多列差不多
+		多行多列经常使用 in 运算符
+        多行单列子查询比较运算符
+            [not] in
+            >|=|< any       和查询到的集合中的一个符合就行了
+            >|< all         大于或小于集合的所有值
+            [not] exists    是否存在某一个结果
+        使用 with 可以声明表变量,使用 as 给变量赋值
+            with temptb as (select*from info)   //  声明 temptb 变量
+                select info2.id,name,years from info2,temptb where info2.id=temptb.id;
+    
+    合并查询
+        select_query union|intersect|minus select_query 
+        两个查询语句要求类型和数量要求一模一样,求出两个结果集的并集或交集或差集
+
+    select 'id is ', id from info;                                      // 分成两列显示
+    select 'id is '||id from info;                                      // 合成一列
+    select name from info where name like 'chu_%' escape 'u';           // ch_en
+    select id,name,sex from info order by 1;                            // 以 id 来排序
+    select id1,id2,sum(num)from info group by rollup(id1,id2);          
+    select id,name from info where id>any(select id from info2);
+    
+* 数据操作
+    插入操作
+        insert into xxx values(...);
+        insert into xxx(xxx,xxx) values(xxx,xxx);
+        insert into xxx select ... ;
+        insert /*+append*/ into xxx select ... ;    //  此操作不写入重做日志文件,当需要添加很多记录时可以节约时间
+    修改操作
+        update xxx set xxx=xxx [where ...]
+    删除操作
+        delete from xxx [where ...]                 //  没有加条件语句时和 truncate table xxx 效果一样,但 truncate 语句不能恢复
+    融合操作
+        主表与次表比较,两个表的设计要求一模一样,匹配语句成功则用次表相应记录更新主表,失败则用次表插入主表,次序不能颠倒
+        merge into xxx 
+        using xxx
+        on (...)                            //  和连接查询不同,这里的 on 要求加括号
+        when matched then update ...
+        when not matched then insert ...    //  insert 后面不能加 into xxx ,直接加 values
+
+        merge into main using minor on (main.id=minor.id)
+        when matched then update set main.name=minor.name
+        when not matched then insert values(minor.id,minor.name)
+
+* 事务处理
+    事务处理关键词: commit , rollback , savepoint
+        insert into main values(1,'chen');
+        savepoint a;
+        insert into main values(2,'li');
+        rollback to a;
+        commit;
+        select id from main;    //  1
+    当用户断开连接时系统会自动提交事务
+
+* sql 函数  abs ceil exp flood ln log mod power sign sqrt ...   //  sign 符号, exp e的幂, mod 余
+* 字符函数  
+    concat(str1,str2)       连接，使用 || 能达到一样的效果
+    initcat(str)            仅首字母大写
+    instr(str1,str2[,m])    从 m 开始在 str1 中搜索 str2 ,返回搜索到的位置
+    substr(str1,m[,n])      从 m 开始截取 str1 的 n 个字符 
+    replace(str1,str2,str3) 将 str1 中 str2 替换成 str3
+* 日期函数
+    sysdate                 返回系统时间            
+    months_between(x,y)     两个日期的月的差
+    to_char(d,'...')        将日期转化为指定格式的字符串
+    to_date(str,'...')      将字符串转化为指定格式的日期
+	to_timestamp
+* 其他函数
+    user                    当前用户
+    uid                     当前用户 id
+    hextoraw('str')         将字符串转化为数值  //  字符串用十六进制存储,数值用二进制存储,平均两个字节转化为一个字节
+    rawtohex('num')         将数值转化为字符串  //  将一个字节转化为两个字节,默认用 3 填充
+    

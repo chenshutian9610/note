@@ -1,0 +1,61 @@
+* 编写 servlet 需要将 tomcat\lib\servlet-api.jar 复制到 jdk 的扩展目录中（jdk\jre\lib\ext）
+
+* servlet类 需要使用包名，并且需要导入以下三个包
+    import java.io.*;
+    import javax.servlet.*;
+    import javax.servlet.http.*;
+
+* servlet 需要编写部署文件 web.xml ，格式如下：
+    <?xml version="1.0" encoding="utf-8"?>
+    <web-app>
+        <servlet>
+            <servlet-name>name</servlet-name>
+            <servlet-class>classpath</servlet-class>
+        </servlet>
+        <servlet-mapping>
+            <servlet-name>name</servlet-name>
+            <url-pattern>/xxx</url-pattern>
+        </servlet-mapping>
+    </web-app>
+  开头 ? 与 xml 之间不能有空格，如果 xml文件 中只有英文，可以把编码改为 iso-8859-1
+  servlet-name  为要创建的 servlet对象 的名字，相当于 bean 的 id ，
+  servlet-class 为 servlet类 的路径，相当于 bean 的 class，
+  url-pattern   为访问时输入的名字，与 jsp文件 完全等价，在文件中需要加入 / ，但是在输入网址时不能加入
+
+* servlet类 常用的方法有 init ，service ，doPost ，doGet ，destroy
+  init 的声明格式为：public void init(ServletConfig config) throws ServletException
+  service 为 servlet 的主方法。doPost 和 doGet 分别针对 form 的 post 和 get ，可以代替 service 
+  destroy 一般直接继承，不需要重写
+  
+* servlet类 是 HttpServlet类 的子类
+	HttpServlet 类是一个抽象类，它继承于 Servlet 接口
+	其他 Servlet* 的 java 对象多为接口，如 ServletRequest，ServletContext
+	其他 HttpServlet* 的 java 对象也一样，如 HttpServletRequest，HttpServletContext 等多为公共接口
+
+* 一般的 servlet类 的模板
+    package servlets;
+    import java.io.*;
+    import javax.servlet.*;
+    import javax.servlet.http.*;
+    public class servlet extends HttpServlet{
+        public void init(ServletConfig config) throws ServletException{
+            super.init(config);
+        }
+        public void service(HttpServletRequest request,HttpServletResponse response) throws ServletException,IOException{
+            response.setContentType("text/html;charset=utf-8");
+            PrintWriter out=response.getWriter();
+            String name=getServletName();
+            ......  
+            //  service 默认用来判断Http请求类型，具体操作由doPost或doGet执行
+        }
+    }
+
+* 重定向与转发，sendRedirect 不能将请求一起传输，requestDispatcher可以
+  转发由 request对象 调用 public RequestDispatcher getRequestDispatcher(url) 得到RequestDispatcher对象，
+  然后再通过该对象调用 void forward(request,response) 进行转发
+  重定向由 response 对象使用
+  * 转发给另一个 jsp 后，当前 url 仍然显示为原来的地址，这一点和 <jsp:forward page=""/> 一样，如果由 servlet 转发则网站仍然为 servlet 的 url
+
+* 可以通过 HttpSession session=request.getSession(true); 得到 session对象 。
+
+  

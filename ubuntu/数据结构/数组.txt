@@ -1,0 +1,31 @@
+	String[]str=new String[4];
+	int[]i=new int[5];
+	Object[]obj={str,i};
+
+	String[]s=(String[])obj[0].clone();	//String类继承Object.clone()
+
+	import java.util.Arrays			//Arrays为负数
+	...
+	int[]i={1,6,5,8,9,7,3};
+	Arrays.sort(i);
+	Arrays.binarySearch(i,6);		//binarySearch要在sort之后才可以用,返回最后的匹配
+	Arrays.fill(i,0);
+	int[]i2=new int[i.length];
+	System.out.println("i=i2?:"Arrays.equals(i,i2));
+
+	顺序查找
+	从0到length-1一个个对比，时间复杂度为O(n)
+
+	折半查找
+	while(low<high){
+	  low=0;
+	  high=length;
+	  i=(low+high)/2;
+	  if(arr[i]==x)return x;
+	  else if(arr[i]<x)low=i+1;
+	  else high=i;}
+	x的匹配值为low到high-1，每次折半对比，时间复杂度为O(sqrt(n))
+
+	
+	数组类型如Object[]，String[]，int[]之间不能相互转换
+	clone方法返回Object类型，而不是Object[]

@@ -1,0 +1,96 @@
+× mysql 特殊函数
+		now(),sysdate()													当前日期
+		date,time,year...												以日期为参数，得出日期的子信息，如 date(now())
+		datediff(x,y)														两个日期的差，如 datediff('1996-11-24','2018-7-14')
+		adddate/subdate(x,n)										获取日期的前后 n 天，如 adddate('2018-1-1',5) 得到 2018-1-6
+		concat_ws(' ','hello','world')					第一个参数为连接字符串的分隔符，该例子返回 'hello world'，如果是 concat 返回的是 'helloworld'
+		char_length/length(str)									分别计算字符长度和字节长度
+		pi()																		这是一个函数，返回 3.1415926
+		encode/decode(pwd,str)									通过 str 来加密或解密 pwd，如 decode(encode('hello','nihao'),'nihao') 返回 hello
+		version(),database(),user()						
+
+× 在 mysql 中默认以 ; 为结束符，如 select 3; 马上就执行了，但是在存储结构和触发器等程序中的语句也是以 ; 结尾，这样就冲突了
+  所以在写存储结构等程序时需要使用 delimiter 命令改变默认结束符，如 delimiter / ，这样子 select 3/ 才能执行
+× mysql 中的存储结构等的语法与 oracle 类似，但是有一些是不同的
+		mysql 中的形参和返回值可以带有精度，而 oracle 不行
+		mysql 中的形参的模式是在最前面的，oracle 在中间，如 create procedure proc(inout str char(8)) 
+		mysql 中写存储过程时需要使用 delimiter 命令，在 oracle 默认会自动识别过程语言和 sql 命令
+		mysql 中赋值语句通过命令 set，oracle 使用 := ，如 set i=1;
+		mysql 中 declare 一样用来声明，但却是放在 begin-end 里面的，而且对每一个变量使用一次	
+		mysql 中函数不能使用模式，因为默认就是 in，并且返回类型的那个语句的 return 需要加 s，如 create function func(x int)returns int
+		mysql 调用存储过程使用 call（不能是 execute），调用函数使用 select
+		mysql 中游标的使用过程 declare，open，fetch-into，close，但是在 declare 部分和 oracle 有区别，declare myCursor cursor for select id from test，并且游标接受的是一个字段不是一个记录，和 oracle 反过来，游标没有 %notfound 这种方法判断结束，而是 declare continue handler for not found set var=0;
+		mysql 的触发器也提供了 old 和 new，和 oracle 不同的是使用时不用加 :
+		
+× 可以使用 show status 和 show create 来查看存储过程和函数等程序，用法和表一样
+		show procedure status like 'proc'
+		show create procedure proc
+		
+× 存储过程
+		create procedure proc(in x int)
+		begin
+		select x;
+		end
+		
+× 函数
+		create function func(x int)returns int			//	注意这里是 returns 不是 return
+		begin
+		return x+100;
+		end
+		
+× 游标
+		declare done bool default false;
+		declare temp int;
+		declare i cursor for select id from test;										在这一句话后面不能再使用一般的 declare，如果把前两句移到这句话后面将报错
+		declare continue handler for not found set done=true;				当游标搜索到最后时将 done 设为 true
+		open i;
+		label:loop
+		fetch i into temp;
+		if done=true then 
+			leave label;
+		end if;
+		set x=x+temp;
+		end loop;
+		close i;
+		
+× 触发器
+		create trigger test_tri 
+		after delete on test 
+		for each row																								mysql 的触发器都是行级的，没有语句级的，并且只对 dml 起作用
+		begin																												如果语句块只有一句的话，begin-end 可以省略
+		insert into one values(old.id,old.name);										注意这里操作的表不是 test，因为触发器不能操作原表
+		end
+	查看触发器
+		show triggers
+		select*from information_schema.triggers where trigger_name=${trigger} \G
+	
+× 事务（InnoDB 和 BDB）
+	事务如果设置了自动提交，需要显示使用 start transaction
+	可以设置 @@autocommit 的值来开关自动提交功能
+	可以设置事务的隔离级别来调整事务动作，通过 @@tx_isolation，默认为可重复读（共四种级别，可参考 hibernate 笔记）
+	mysql 不支持嵌套事务，当重复声明两次事务时，会自动提交上一次事务
+	
+× 伪事务
+	MyISAM 不支持事务，但可以通过其他方式来达到事务的效果，被称为伪事务
+	表锁
+		lock tables ${table} read|write,...		可以锁定多个表，当模式为 read 时，所有用户只能读表，当模式为 write 时，其他用户不能读写表
+		unlock tables;
+	
+× 事件
+		create event myEvent 
+		on schedule every 5 second								
+		on completion preserve enable							可选项，可以不加
+		do
+		insert into test values(0,'event-made');
+		alter event myEvent disable								设为禁用
+		drop event myEvent												删除事件
+	查看事件是否打开（默认关闭）
+		select @@event_scheduler
+		show variables like 'event_scheduler'
+		show processlist
+	设置事件调度需要使用 global，如 set global event_scheduler=on;
+	
+× @x 为自定义全局变量，@@x 为系统变量，赋值时不用使用 @ ，这和 shell 语法是一样的
+		set autocommit=0;
+		select @@autocommit;
+		

@@ -1,0 +1,75 @@
+一个顾客可以有多个订单，为这两个对象建表
+顾客表是父表，不需要知道订单表的存在
+订单表是子表，需要有一个外键指向顾客表的主键
+简而言之，维护两个表之间的关联是靠子表，即多的一方
+---------------------------------------------------------
+@Entity
+@Table(name="tb_Customer")
+public Class Customer{
+
+	private int id;
+	private String name;
+	private Set<Order>orders=new HashSet<>();
+	
+	@Id
+	@GeneratedValue(generator = "myGenerator")
+  @GenericGenerator(name="myGenerator",strategy = "increment")	//	hibernate 专用注解，使用 hibernate 的 increment 策略
+	@Column(name="id")		
+	public int getId(){return id;}
+	
+	@Column(name="name")
+	public String getName(){return name;}
+	
+	@OneToMany(mappedBy="customer")
+	public Set<Order> getOrders(){return orders;}
+	
+}
+---------------------------------------------------------
+@Entity
+@Table(name="tb_order")
+public Class Order{
+	
+	private int id;
+	private String name;
+	private int price;
+	private Customer customer;
+	
+	@Id
+	public int getId(){return id;}
+	
+	public String getName(){return name;}
+	
+	public int getPrice(){return price;}
+	
+	@ManyToOne(fetch = FetchType.LAZY,cascade = CascadeType.ALL)
+	@JoinColumn(name="c_id")
+	public Customer getCustomer(){return customer;}
+	
+}
+---------------------------------------------------------
+/*
+ * # 定义持久化类最基本的注解
+ * @Entity 	标识持久化类
+ * @Id 			标识主键
+ * @OneToMany( mappedBy ) 				//	mappedBy 必须有，默认延迟加载
+ * @ManyToOne[ fetch , cascade ]	//	可以不带属性直接使用，默认不延迟加载
+ *
+ * # 能自动生成的注解，不必要
+ * 表名 	= @Table 	？自定义名称：类名小写
+ * 列名 	= @Column ？自定义名称：属性名
+ * 外键名 = @JoinColumn ？自定义名称	：属性名_id
+ * 中间表 = @JoinTable 	？自定义中间表：根据类名与主键名自动生成
+ *
+ * <p>
+ * 	@GeneratedValue 指定主键生成策略（必须和 @Id 一起使用）
+ * 	默认为 auto，使用 hibernate 框架时表现为在数据库创建一个 hibernate_sequence 表来存放主键
+ * 	可以通过 strategy 属性指定 JPA 标准策略（具体行为可能会根据持久层框架的不同而不同）
+ *	可以使用 generator 属性指定自定义生成器（hibernate 提供了一个 @GenericGenerator，可以指定 native 和 increment）
+ * 	<p> 如果使用了 @GeneratedValue 就不能自己指定主键 ！！！ </p>
+ * </p>
+ *
+ * # PS
+ * @OneToOne 和 @ManyToMany 用法同上，不过 @ManyToMany 会生成中间表
+ * 注解是加在 getter 上面的，需要特别注意（直接加在属性上也是可以的，但会破坏其封装性）
+ * 
+ */

@@ -1,0 +1,55 @@
+× 访问表单元素可以通过之前学过的 DOM 方法（getElementById 等），也可以通过 document.form-name.element-name 来访问
+  第二种方法只能用于表单，并且表单及其中要访问的对象必须含有名字
+    alert(document.testForm.button_1.value);
+× 除了 fieldset 外所有 input 标签都含有以下属性
+    name,type,value
+    disable,readonly
+    tabindex    按 tab 键时的顺序
+    form        指向 input 的 form，只读
+× 表单元素常用三种事件，focus，blur 和 change，在 javascript 中都有对应的方法
+  如 focus()，使用这个方法可以实现自动切换焦点
+    <input type='text' name='one'   maxlength="3" size='4' onkeyup='next(this,two)'>-
+    <input type='text' name='two'   maxlength="3" size='4' onkeyup='next(this,three)'>-
+    <input type='text' name='three' maxlength="3" size='4'>
+    × size 为文本框长度，maxlength 为文本长度限制，next 函数中的第二个参数没有加引号，所以是对象变量，如 two 指向第二个文本框
+× 文本框元素可以使用方法 select 来选择其内所有文本
+× 文本框屏蔽某些字符可以使用 event 的阻止默认操作，也可以使用键盘事件
+× 浏览器一般含有 clipboardData 对象，javascript 可以通过它访问剪切板，其有三种方法 getData，setData 和 clearData
+  在 IE 中，其是 window 的对象，在 chrome 和 safari 中其是 event 的对象
+  和剪切板有关的事件有 beforecopy,beforecut,beforepaste,copy,cut,paste
+  × 在 chrome 中 clipboardData 和 OS 的剪切板是分开的
+    event.clipboardData.setData('text','nihao');        //  即使设置了 clipboardData，但是粘贴时的内容却不是这个
+    event.clipboardData.getData('text');                //  但是使用 getData 能够得到，参数无所谓大小写
+    event.clipboardData.clearData('text');              
+× 每个 <select> 都有一个 options 数组，select 元素含有以下常用方法和属性
+    add(new,old)    添加一个新的 option 到某一个 option 前面
+    multiple        是否支持多选
+    remove(index)   删除 option
+    selectedIndex   被选中的索引
+    size            显示的数量
+    当 option 的 value 没有指定时，其文本就是它的 value
+× 单选框与多选框，通过 checked 属性来判别是否被选中
+  <label> 常与这两种对象联系在一起，lable 中有一个 for 选项来说明它是谁的标注
+× 每个表单都含有 elements 数组，就像每个函数都含有 arguments 数组一样
+× 提交与重置表单，两者类似
+    <input type='submit' value='submit'>
+    <button type='submit'>submit</button>
+  submit 和 reset 两个事件对应 submit 和 reset 操作，可以通过 event 对象的方法来阻止 submit 或 reset
+    form.onsubmit=function(event){
+        event=event||window.event;
+        if(event.preventDefault)
+            event.preventDefault();			//	阻止默认事件的默认操作,但不能阻止事件传播,并且只能作用于按钮,对于文本框等无效
+        else
+            event.returnValue=false;		//	有些浏览器不支持 preventDefault
+    }                                       
+    上述这两个事件是放在 form 标签这个位置，并且事件处理必须是含有 return 的,用于接收 event.returnValue 的值
+		<form onsubmit="return validate(this,event)">
+× 表单验证，一般是通过正则表达式来验证，可以通过以下方式开启验证
+    通过 submit 事件
+    通过 submit 方法，<button onclick='validate()'>，validate 函数中含有 submit 方法
+    通过 blur 事件，常用来验证邮箱格式等
+× html5 验证方式
+    在标签中加上 required 字段表示必填，如 <input type='text' required>，在脚本中可以使用 required 属性来判别是否使用了这个选项
+    可以通过 input 标签新增的 email 和 url 类型，如果浏览器不支持会自动转为 text，如 <input type='email' name='email'>
+    html5 为文本框增加了 pattern 属性，使用正则表达式来验证文本，如 <input type='text' pattern='\d+'>，pattern 不需要 ^ $，默认已经加上
+    在 form 标签上使用 novalidate 字段可以不验证，如 <form action='' novalidate>

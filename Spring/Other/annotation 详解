@@ -1,0 +1,20 @@
+常用注解
+	@Component @Repository @Service @Controller 声明一个 bean
+	@Autowired 默认通过类型自动装配
+	@Qualifier 在 @Autowired 的基础上匹配名字
+	@Resource 和 @Autowired 相同作用，区别在它是通过名字装配的，需要使用 name 属性
+	@Value 为属性赋值
+	@Scope 给 bean 指定范围，需要放在 bean 声明之前，即 @Component 之前
+	@PostConstruct 指定 bean 的 init-method
+	@PreDestroy 指定 bean 的 destroy-method
+	@Order 指定 bean 的加载顺序，由 value 来指定值，值越小越优先（相当于实现 Ordered 接口）
+	@Lazy 延迟注入的属性，需要注意的是需要在 bean 和相应属性之前都使用这个注解
+使用注解需要在配置文件中使用 <context:component-scan base-package="xxx"/>
+通过名字装配 bean 使用 @Resource，通过类型装配使用 @Autowired
+	
+JavaConfig 注解
+	@Configuration 指定类为配置类，和 beans.xml 一样的作用
+	@Bean 声明一个 bean，如果不用 name 指定名字，则使用方法名作为名称
+	@ImportResource 加载其他配置文件
+	@Import 加载其他配置类
+可以使用 AnnotationConfigApplicationContext 的 register 方法注册配置类（使用该方法后需要使用 refresh）

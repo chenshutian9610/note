@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE hibernate-mapping PUBLIC 
+"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+<hibernate-mapping package="hibernate.school">
+    <class name="Course" table="course">
+        <id name="id" column="id">
+            <generator class="increment"/>
+        </id>
+        <property name="name" column="name"/>
+        <!--因为 mapping 标记使用了 package，所以这里的 Student 可以是全名也可是只是类名-->
+        <many-to-one name="student" class="Student" column="stu_id"/>
+    </class>
+</hibernate-mapping>

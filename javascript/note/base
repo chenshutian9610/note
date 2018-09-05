@@ -1,0 +1,148 @@
+× javascript 有三种使用方式
+    <script></script>，可以出现在 html 文件的任何位置
+    创建一个 js 文件，通过 script 标记的 src 属性来导入，必须是 <script src='test.js'></script> 的格式
+    标签的事件属性中，如 <body onload="alert('hello');"> ...
+
+× javascript 数据类型有两种，原始类型和对象类型
+    原始类型包括基本类型（number，string 等）和特殊类型（null 和 undefined）
+    对象类型（object）为 array，function 和 String，Number 等包装对象
+  * 相同值的原始类型与对象类型比较时，== 为 true，=== 为 false
+		var str1='hello';
+		var str2=new String('hello');
+		with(document){
+			write(str1==str2);		//	true
+			write(str1===str2);		//	false
+		}
+	相同值的原始类型即使是 string，使用 === 也是 true（string 是基本类型，不是引用类型）
+	但相同值的对象类型不管是 == 还是 === 都是 false（对象类型是引用类型）
+	
+----------- 原始类型
+
+* 特殊类型 
+  × 声明变量统一使用 var（弱变量），如果声明时没有赋值，则值为 undefined）
+        var message;
+        alert(message==undefined)   // true
+  × null 是空对象指针，使用时把它当做对象变量使用
+        var message=null;
+        alert(typeof message);     //  object
+		
+* 基本类型
+  × boolean 型变量只有 true 和 false，与数字无关，即不一定是 1 和 0
+  * number 型变量可以表示整数和浮点数，可以表示三种进制
+        十进制      33
+        八进制      037			//	以 0 开头，如果基数超过范围就会被当做十进制，如 018 会被当成 18
+        十六进制    0xab		//	以 0x 开头
+    × 可以使用科学计数法，如 var num=123.45e3
+    × 使用浮点数计算时要小心，其精度为 17 位，但是准确度有问题，如 0.1+0.2=0.3000000000000004，所以一般不使用浮点数
+    × infinity 表示无穷大，可以通过 isFinite 判断一个数是否有穷
+    × NaN 表示非数字，可以通过 isNaN 方法测试，如 isNaN(3/0)
+	
+----------- 对象类型
+  object 型变量中的属性表达方式和 json 类似，可以使用 for in 遍历对象，其他所有对象类型都是继承 object 的
+    var obj={name:"chen",age:10};
+    document.write(obj.name);       //  chen
+    document.write(obj["age"]);     //  10
+
+  × 函数
+    function change(x,y,z){					//  可以写成 var change=function(x,y,z) ...
+        var u;
+        u=x+y+z;
+        return u;
+    }
+    × 函数内的变量如果没有用 var 进行修饰，则会被当成全局变量
+    × 每个函数都有一个 arguments 数组式对象，用来表示参数，注意，arguments 不是真正的数组
+
+  × 数组
+		var arr1=new Array();						//	数组长度是可以动态改变的，所以初始化时可以不确定长度
+		var arr2=new Array(10);			 		 
+		var arr4=[3,5,2,5];             //  隐式创建
+		var arr1[0]=new Array(0,1);     //  arr1[0][0]=0，javascript 不支持二维数组，但可以模拟
+		document.write(typeof arr1);		//	object
+	数组常用方法
+		contact         添加一个或多个对象到数组后面
+		join            在每两个数组元素之间添加一个字符串，把整个数组连起来
+		shift/unshift   移除或添加数组开头元素
+		pop/push        移除或添加数组结尾元素
+		reverse         反转
+		sort            排序
+    × contact 和 join 生成的数组对象是一个暂时的对象，不是在原数组中操作的
+    × 数组对象除了上述常用方法外还有一个常用属性，length
+	* pop/push/join 用法演示
+        var arr1=[2,4,1,5];
+        arr1.pop();                         //  2,4,1
+        arr1.push(0,1);                     //  2,4,1,0,1
+        arr1.join('-');                     //  数组不变
+        document.write(arr1.join('-'));     //  2-4-1-0-1
+    
+  × 日期
+		var date=new Date();
+		var date=new Date('2009-1-1');          //  日期中的数组只要使用非数值隔开就可以，不一定非要'-'，如  new Date(‘2009 1 1’)
+		var date=new Date('2009-1-1 03:55:22'); //  具体时间中的数值必须使用':'隔开，不然无法识别
+    日期和 java 的日期类差不多，最大的共同点就是 month 的表示是 0~11，常用方法如下
+		setFullYear         
+		getFullYear/Month/Date
+		getHours/Minutes/Seconds
+		× setFullYear 不仅可以设置年份，还可以设置月份和日期，中间以逗号隔开，date.setFullYear(2009,4,3) 为 2009-5-3
+		× 获取年份时是 getFullYear，不是 getYear
+		× 获取时分秒时，其方法名是复数形式，如 getMinutes，需要注意
+	日期可以像数值一样用来比较大小
+		document.write( new Date('2009-1-1') > (new Date()).setFullYear(2018,3,3) )   //  false，set 方法前的括号可以不要
+	操作日期必须以毫秒为单位
+		new Date(new Date()-86400000)   //  前一天
+		new Date(new Date()-1000)       //  前一秒
+
+  × 数学，Math 引用类型没有构造方法，类似于静态类，不用初始化直接可以使用
+    Math.PI         //  3.1415926...
+    Math.sqrt(4)    //  2
+
+  × 字符串
+		var str=new String("hello world");
+	字符串可以同时使用两种引号，并且不用使用转义字符，如 var str="type='text' name='name'";
+	常用方法，基本类型 string 使用这些方法时被隐式转换为 String 对象类型
+		concat                          //  相当于'+'，少用
+		substr(start,length)            
+		substring(start,end)
+		indexOf/lastIndexOf(str,from)
+		split(seperator)                //  返回一个分割后的数组
+		toLowerCase/toUpperCase
+		***** 与正则表达式有关的方法 *****
+		search                  		//  相当于 indexOf 的升级版
+		replace(pattern,str)
+		match                   		//  需要使用 g（global），不然返回的是一个字符而不是数组
+		split
+
+  × 正则表达式
+    正则表达式有专门的引用类型，RegExp（regular expression）
+		var reg=new RegExp(pattern[,flag]);     //  显示定义
+		reg=/pattern/[flag];                    //  隐式定义，不能像字符串一样使用引号围起来
+		× flag 取值
+			i   //  ignoreCase
+			g   //  global
+			m   //  multiline
+		× pattern 常用符号（d,s,w 以 \ 开头）
+			^/$     //  表示开头或结尾（^ 在[]中为非的意思，如 [^1-9])
+			s/S     //  匹配空白符或非空白
+			d/D     //  匹配数字与非数字
+			w/W     //  匹配字符或非字符（字符范围不包括标点符号与汉字，但下划线被当成一个字符）
+			.       //  匹配换行符以外的符号
+			{n}     //  匹配 n 次
+			{n,}    //  匹配至少 n 次
+			*       //  相当于 {0，}
+			+       //  相当于 {1，}
+			?       //  相当于 {0,1}
+			|       //  或
+			()      //  分组
+	RegExp 对象含有的方法
+		exec    //  筛选出匹配的字符串
+		test    //  测试字符串是否含有匹配的值
+    例子
+			var reg=/^\w+\d+$/;
+      var str="hello1234";
+      reg.exec(str);      //  1234
+      reg.test(str);      //  true，最常用的方法
+
+  × 其他引用类型
+    Boolean，重写了 valueOf 和 toString，一个为 true 一个为 “true”
+    Number，有两个比较特别的方法
+      toString(n)         //  n 为可选参数，可以将数值转化为不同进制
+      toFixed(n)          //  保留 n 位小数位数

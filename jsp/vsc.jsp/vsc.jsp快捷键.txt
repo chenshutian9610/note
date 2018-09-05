@@ -1,0 +1,7 @@
+jsp  			jsp基础格式
+at			<%@ %>
+java			<%  %>
+define			<%! %>
+encode			iso-8859-1转utf-8
+get			setProperty
+set			getProperty

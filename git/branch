@@ -1,0 +1,41 @@
+× 分支与标签的区别
+	标签是静态的，只能指向一个提交，不能变
+	分支是动态的，永远指向该分支最新的提交，如默认的分支 master
+× 分支命名中间可以带有 / ，但是不能出现在结尾，一般用来代表某一类特性的分支，如 bug/001，bug/002
+× 要引用分支中的某文件时使用 : ，如 master:hello 表示 master 分支中的 hello 文件
+× 可以使用 git merge-base ${branch} ${branch} 获得两个分支的分叉点
+× git branch 						查看当前分支
+  git branch ${branch} ${where} 	在哪里创建一个分支（checkout -b 也能用于在特定地方创建分支）
+  git branch -d ${branch} 			
+  	用于删除一个分支，但没法删除当前分支
+  	如果删除的分支中的提交含有当前分支所没有的，即删除之后，被删除的分支的一些提交将处于无分支状态，会报错，可以使用 -D 强制删除
+  	（无分支的提交最终会被 gc 删除）（在删除之前给提交创建标签，虽然还是无分支状态，但是不会被 gc 删除）（意外删除的分支可以使用 reflog 恢复）
+  git show-branch					
+  	可以看到所有本地分支，一个分支一种颜色
+  	-r 显示远程，-a 显示所有
+  	被分为两层，上层是 git branch，下层是各分支历史  	
+× git show 							相当于 git show HEAD，显示当前分支的最新提交信息
+  git show master:hello				显示 master 分支中 hello 文件的内容
+× 使用 git checkout 转换分支时，如果当前分支为脏却没有提交，会显示错误，可以使用 -f 选项强制转换，但修改的数据会丢失
+  可以使用 -m 融合变更到别的分支，如 git checkout -m dev，将本分支未提交的变更融合到 dev 分支的相同文件中，一般会发生冲突，得到的文件如下
+  	hello world
+	<<<<<<< dev
+	nihao zhongguo
+	=======
+	hello china
+	>>>>>>> local
+	× <<< === >>> 代表融合时产生的冲突，< 表示原来，= 表示分割，> 表示变更
+	  上面的例子相当于 nihao zhongguo -> hello china，这些符号只是为了告诉我们冲突的地方，需要我们手动去掉
+
+× git diff HEAD 					工作目录与 HEAD 比较
+  git diff 							工作目录与索引比较
+  git diff --cached					索引与 HEAD 比较
+  ----------------------------------------------------------
+  git diff
+  	-w|--ignore-all-space 			忽略空格
+  	--color							显示多彩
+  	--stat							显示修改了几行
+  	--staged						与 --cached 一样
+× svn 和 git 产生 的 diff 
+	在 svn 中 diff 是和 tree 一样的基础文件，而在 git 中只是导出的数据，一次性的
+	svn 通过存储一个又一个的 diff，git 通过比较两个版本的快照

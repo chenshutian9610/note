@@ -1,0 +1,93 @@
+{
+	"HTML template": [{
+		"prefix": "html",
+		"body": [
+			"<!DOCTYPE html>",
+			"<html>",
+			"<head>",
+			"\t<meta charset=\"utf-8\" />",
+			"\t<meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\">",
+			"\t<title>${1:Page Title}</title>",
+			"\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">",
+			"\t<link rel=\"stylesheet\" type=\"text/css\" media=\"screen\" href=\"${2:main.css}\" />",
+			"\t<script src=\"${3:main.js}\"></script>",
+			"</head>",
+			"<body>",
+			"\t$0",
+			"</body>",
+			"</html>"
+		],
+		"description": "Simple HTML5 starting point"
+	},
+	{																			
+		"prefix":"jsp",
+		"body":[
+			"<%@ page contentType=\"text/html;charset=utf-8\"%>",
+			"<html>",
+			"<head>",
+			"\t<title></title>",
+			"</head>",
+			"<body>",
+			"\t$0",
+			"</body>",
+			"</html>"
+		],
+		"description": "Simple jsp starting point"
+	},
+	{
+		"prefix":"java",
+		"body":[
+			"<%",
+			"\t$0",
+			"%>"
+		],
+		"description": "<% %>"
+	},
+	{
+		"prefix":"at",
+		"body":[
+			"<%@ $0 %>"
+		],
+		"description": "<%@ %>"
+	},
+	{
+		"prefix":"define",
+		"body":[
+			"<%!",
+			"\t$0",
+			"%>"
+		],
+		"description": "<%! %>"
+	},
+	{
+		"prefix":"encode",
+		"body":[
+			"<%!",
+            "String encode(String s){",
+    		"\ttry{",
+            "\t\tbyte[]b=s.getBytes(\"iso-8859-1\");",
+            "\t\ts=new String(b,\"utf-8\");",
+			"\t\treturn s;",
+			"\t}catch(Exception e){",
+			"\t\treturn \"wrong\";",
+			"\t }",
+			"}",
+			"%>\n"
+		],
+		"description":"iso to utf-8"
+	},
+	{
+		"prefix":"useBean",
+		"body":["<jsp:useBean id=\"$0\" class=\"\" scope=\"${1:request}\" />"]
+	},
+	{
+		"prefix":"getProperty",
+		"body":["<jsp:getProperty name=\"$0\" property=\"\" />"]
+	},
+	{
+		"prefix":"setProperty",
+		"body":["<jsp:setProperty name=\"$0\" property=\"\" value=\"\" />"]
+	}
+
+]
+}

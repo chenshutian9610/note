@@ -1,0 +1,21 @@
+i  插入                I 行首插入
+a  追加                A 行尾追加
+o  创建下一行并插入     O 创建上一行并插入
+x  删除一个字符        nx  删除n个字符
+dd 删除一行           ndd 删除n行
+yy 复制一行            nyy 复制n行           yw 复制单词         p  粘贴
+0 移到行首             G 移到末行            
+ctrl+b  上一页         ctrl+f 下一页
+
+/关键字 向下查找关键字  ？关键字  向上查找关键字    n 重复上一查找命令(/或?）
+:wq 保存并退出
+:w filename 以filename为名字保存
+:q! 强制退出
+:n  移到n行（同G）
+:set nu 显示行数
+:m,ns/str1/str2   从m到n行，将str1转化为str2，注意s不能省略
+
+打开多个文件时:next转到下一个，:previous转到上一个，:r filename把filename的内容复制进来
+通过 etc/vim/vimrc 可以修改 vim 的环境变量设置，常用快捷键如下
+    u       撤销
+    ctrl+r  反撤销

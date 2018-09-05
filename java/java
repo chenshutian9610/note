@@ -1,0 +1,580 @@
+bash 文件目录：C:\Users\wanna\AppData\Local\lxss
+
+eclipse 
+	alt+/	显示补全菜单，输入 syso 再使用这个命令得到 System.out.println();
+	ctrl+1	显示错误纠正菜单，如少了 try-catch 语句等错误
+
+java
+	\ddd	0	八进制
+	\dddd	0x	十六进制
+
+java 关键字
+	strictfp
+	volatile
+	default
+	transient
+	instanceof
+	final		java 中没有 const，其使用 final 来修饰常量
+
+java 注释
+	可读性第一，效率第二，注释占程序 1/5 到 1/2
+
+java 字符串
+	String str1="we are fine";
+	String str2="we are fine";
+	String str3=new String("we are fine");
+	System.out.println(str1==str2);	// true
+	System.out.println(str1==str3);	// false
+
+java 字符串方法
+	length
+	indexOf/lastIndexOf
+	startsWith/endsWith
+	charAt
+	equals/equalsIgnoreCase
+	compareTo
+	replace
+	substring
+	trim
+	toUpperCase/toLowwerCase
+	--------------------------------
+	split
+		split 中第一个参数为分隔符，第二个参数为分割的字符串数量
+		分隔符可以使用 | 来调用多个分隔符，如
+			String[]str=str1.split(" |,",2);	//	分隔符为空格和逗号，str 的长度为 2
+	--------------------------------
+	format（静态类，返回 String 型）
+		format(String format,Object...args)	
+		常用格式符,以 % 开头，t 为第一个字母表示 Date 专用
+			%tF	1996-11-24，如 String.format("%tF",new Date());
+			%tD	11/24/1996
+			%tT	14：30：50
+			%o	转化为八进制，如 String.format("%o",9);	// 11，注意第二个参数为 int 型
+			%x	转化为十六进制
+	--------------------------------
+	正则表达式
+	  与 javascript 比较
+		不需要使用 ^ 和 $，默认就是从开头匹配到结尾
+		\w 一样不能用来匹配汉字
+		正则表达式是一个字符串，不是一个类
+		限定修饰符是一样的，? + * {n} {n,} {n,m}
+	  使用 matches 来测试正则表达式，如 "hello 2018".matches("\\w+\\s\\d+"); // ture
+	--------------------------------
+	StringBuilder
+		append
+		insert(int,str)
+		delete(start,end)
+	使用 System.currentTimeMills（）得到当前毫秒数，可以用来计算某程序片的执行时间
+	使用此方法可以比较出使用 String 和 StringBuilder 的开销
+
+java Arrays 静态类
+	sort（arr）
+	fill（arr,0)|(arr,start,end,0)
+	copyOf(arr,length)
+	copyOfRange(arr,start,end)
+	--------------------------------
+	binarySearch(arr,object)		返回 arr 数组中值为 object 的索引
+	binarySearch(arr,start,end,object)	start 和 end 表示范围
+		当索引为负数使表示插入，如 -3 ，表示 object 应该插入到第三个值
+	binarySearch 的首要条件是 arr 必须是排序的
+		arr={1,3,5,2,9};
+		Arrays.sort(arr);			// 排序后 arr={1,2,3,5,9}
+		Arrays.binarySearch(arr,4); // 返回 -4 ，表示插在第四个，即 3 的后面
+
+java 排序
+	冒泡排序，可以理解为沉底排序，不断遍历使大的数往下沉
+	快速排序，冒泡排序每次排序都会从头比较到尾，但是最下面的是之前已经确定的较大值，而快速排序减少了这个冗余
+	static int[]bubble(int[]arr){
+	  int temp=0,i=0;
+	  for(int u=0;u<arr.length-1;u++) {		比较 arr.length-1 次，每比较一次 i++
+	    for(int n=0;n<arr.length-1-i;n++) { 
+	      for(int m=n+1;m<arr.length-i;m++) {
+		if(arr[n]>arr[m]) {
+		  temp=arr[m];
+		  arr[m]=arr[n];
+		  arr[n]=temp;
+		}
+	      }
+	   }
+	   i++;			//	把这一句注释掉就变成冒泡排序，留着就是快速排序
+	  }
+	  return arr;
+	}
+	
+垃圾回收机制
+	java 的垃圾回收机制是自动运行的，当对象超过范围或为 null 时开始回收（超过范围即函数的局部变量）
+	但是自动回收大多数情况下只能识别 new 出来的对象，可以通过在对象中覆盖 Object 类的 finalize 方法来弥补
+	也可以通过 System.gc() 来强制启动垃圾回收器
+
+数字格式化 java.text.DecimalFormat
+	通过 DecimalFormat 的构造函数或 applyPattern 方法来接受格式，然后使用 format 方法来进行格式化
+	格式
+		0		表示一位数，如果该位没有的话显示为 0，如 0123
+		#		表示一位数，如果该位没有的话不显示
+		E		科学计数
+		,		分组，如 123,455,323
+		'		单引号，包围的字符不会被当做特殊字符
+		%		化为百分数
+		\u2030	化为千分数
+		\u00A4	货币记号
+	DecinalFormat f=new DecimalFormat("000,000.000");
+	double d=1234.56789;
+	System.out.println(f.format(d));	//	001,234.567
+	* 小数不能使用逗号，分组可以使用 setGroupingSize 和 setGroupingUsed 来控制
+		setGroupingSize(int)		设置整数部分每几个分一组，如 2 ，则上面的结果为 12,34.56789		
+		setGroupingUsed(bool)		设置 setGroupingSize 是否有效
+
+Math 静态类
+  常量：PI，E
+  方法：（参数都为 double）
+	sin/cos/tan			Math.sin(Math.PI/2)	//  1
+	asin/acos/atan		上面函数的反函数，如 y=sinx -> siny=x，Math.asin(1)/Math.PI/2	//	1/2
+	exp					Math.E 的 n 次幂
+	log/log10			以 Math.E 或 10 为底的对数
+	sqrt/cbrt			平方根与立方根
+	pow					注意是 pow，不是 power 
+	ceil/floor			向上或向下取整
+	rint/round			取最接近的整数，当一样接近时 rint 取偶数，round 为约等于
+	max/min				
+	abs
+	random				通过当前时间计算出 [0,1) 的随机小数
+
+Random 类（和 Math.random() 返回的数值不一样）
+  默认通过当前时间来计算随机小数，但是有时候如果计算频率太高很可能会出现一样的数字，
+  所以一般使用其构造函数来初始化，参数为种子，不同的种子会生成不同的随机数（精度范围内的任意数，如 -200000000）
+  使用 nextInt(n) 或其他相应的方法返回相应类型，如 nextLong 之类的
+  当 nextInt 没有参数时返回随机整数，当有参数时返回 [0,n) 的随机整数（n 必须是整数）
+  ---------------------------------------
+  Random random=new Random(1);
+  random.nextInt(5);
+  
+BigInteger 和 BigDecimal
+  int 和 double 的精度满足日常使用，但是对企业级的大规模运算却无能为力
+  使用大数字运算没有精度限制，可以是任意数，通过其构造函数初始化，构参为 String 型
+  BigInteger 和 BigDecimal 都是继承 Number 抽象类，所以可以通过 xxxValue 转化为相应类型
+  方法
+	相同的方法（都为一个参数，且参数为大数字类型）
+		add/subtract/multiply/divide/remainder/devideAndRemainder	加减乘除余，除后取余（这方法返回一个数组{商，余数}）
+		compareTo/min/max											比较
+	其他基础运算方法，如 pow，abs 等
+	BigDecimal 的 divide 如果只有一个参数的话，该参数必须为整数（是整数同时也是 BigDecimal 型参数，不矛盾）
+	BigDecimal 的 divide 还有另一种重载方式
+		divide(BigDecimal,scale,roundMode)	
+		//	scale 表示保留的小数位数，roundMode 表示近似的模式，一般为 BigDecimal.ROUND_HALF_UP （四舍五入）
+  -------------------------------------
+	BigDecimal one=new BigDecimal("123.456789");	//	参数为 String 型
+	BigDecimal two=new BigDecimal("2.0");			//	如果值为 2.1 或其他小数将直接报错
+	System.out.println(one.divide(two));
+	
+集合类
+  常用集合接口有 List，Set 和 Map，其中 List 和 Set 继承 Collection 接口
+  Collection 接口方法有
+	add/remove	增加或减少
+	isEmpty		是否为空
+	iterator	返回一个 Iterator 对象，常用方法有 hasNext 和 next
+	size		集合数量
+  List 接口实现类有 ArrayList 和 LinkedList，各有优缺，新增方法有
+	get/set		前者通过索引获取对象，后者将对象插入到索引指向的位置
+  Set 接口实现类有 HashSet 和 TreeSet，后者不仅实现了 Set 接口还实现了 SortedSet 接口，元素递增排序
+    TreeSet 类讲解
+	  新增方法
+		first/last					第一个元素（最小）或最后一个元素（最大）
+		headSet/subSet/tailSet		集合的子集合，head 和 tail 是一个参数，sub 为两个
+		comparator					返回其他的比较器，如果 TreeSet 只实现本身的比较器则返回 null
+	  TreeSet 的泛型参数可以是一个普通的对象，这样将按照 TreeSet 实现的 SortedSet 接口方法来比较
+	  如果是一个实现了 Comparable<Object> 接口的对象（ public int compareTo(Object obj) 返回 1,0，-1）则使用该对象的比较器
+  Map 接口实现类有 HashMap 和 TreeMap，TreeMap 是排序的，但很少用，Map 的每个元素有两个参数（key，value），常用方法有
+	get/put						想想 request 的 getAttribute 和 setAttribute 就知道了
+	containsKey/containsValue	是否包含 key 或 value
+	keySet/values				前者返回一个 Set 型对象，后者返回一个 Collection 型对象，注意区分**
+	putAll						参数为一个 Map 对象
+  * 从 Map 中获取的值的类型都为 Object，如 map.get("one");
+  
+反射（Class）
+  通过类的 class 属性或对象的 getClass 方法可获取类的 Class 对象，Class 对象包含类的所有描述信息，根据需要也可动态修改
+  常用方法有
+	getName																	//	获取类名
+	getPackage																//	返回 Package 对象，可得到类的路径
+	getSuperclass															//	返回 Class 对象，得到超类
+	getInterfaces															//	注意，返回 Class 数组，得到实现的所有接口
+	getConstructors/getDeclaredConstractors									//	返回 Constructor 数组
+	getConstructor/getDeclaredConstractor(Class<?>...parameterTypes)		//	parameterTypes 为构参的 Class 对象
+	getMethods/getDeclaredMethods											//	返回 Method 数组
+	getMethod/getDeclaredMethod(name,Class<?>...parameterTypes)				//	通过方法名和参数锁定获取方法
+	getFields/getDeclaredFields												//	返回 Field 数组
+	getField/getDeclaredField(name)											//	通过名字获取字段
+	* 带有 declared 表示全部（声明的），相反只表示 public
+  Constructor 类常用方法
+	isVarArgs						//	是否有可变参数，int...i 这种就是可变参数
+	getParameterTypes				//	得到所有参数类型，Class 数组
+	getExceptionTypes				//	得到所有异常，Class 数组
+	newInstance(Object...args)		//	创建实例，注意参数为 Object 型的可变参数
+	setAccessible(bool)				//	newInstance 只能作用于 public 的构造函数，可以通过 setAccessible(true) 来允许执行其他 
+	getModifier						//	获取修饰符，int 型，要使用 Modifier 类的静态方法来检测返回值
+	  Modifier 类常用静态方法，都带有返回值做参数
+		isPublic/Private/Protected	//	如 Modifier.isPublic(constructor.getModifier())	//	如果该构造函数为 public 则 true
+		isStatic/isFinal
+		toString					//	返回修饰符的字符串格式
+  ----------------------------------------------
+	/*	
+	 *	Test 类含有一个构造函数 private Test(String...name)
+	 *	注意上述构造方法的修饰符为 private
+	 */
+	Constructor constructor=Test.class.getDeclaredConstractor(String[].class);	//	必须是带有 declared 的方法
+	Class[]parameterTypes=constructor.getParameterTypes();
+	for(int i=0;i<parameterTypes.length;i++)
+		System.out.println(types[i].getName());									//	返回 [L java.lang.String，可变参数带有 [L
+	String[]names=new String[]{"chen","shu","tian"};
+	constructor.setAccessible(true);											//	必须要有，因为修饰符为 private
+	Test test=constructor.newInstance(new Object{names});						//	new Object{} 可以换为 (Object)
+	//	newInstance(1,names);													//	如果是多个参数可以不要 Object，上述情况特殊
+	System.out.println(test.id+" "+test.string);
+  ------------------------------------------------
+  Method 类常用方法（object 指所在类生成的对象）
+	getName
+	getParameterTypes
+	getExceptionTypes
+	getReturnType
+	isVarArgs
+	getModifiers
+	setAccessible						
+	invoke（object，Object...args)		//	args 为方法的参数
+  Field 类常用方法（object 指所在类生成的对象）
+	getName
+	getType
+	get(object)							//	得到该对象中属性的值，如 id.get(new Member()); // 返回的值为 Object 型
+	set(object,value)					//	通过 value 为字段赋值，但值为 Object 型
+	getInt/Float/...(object)		
+	setInt/Float/...(object,value)
+	getModifier
+	setAccessible						
+  -------------------------------------------------
+	/*
+	 *	Test 类有如下成员变量
+	 *  	int id=10;
+	 *		String name="";
+	 */
+	Test test=new Test();
+	Field[]fields=test.getClass().getDeclaredField();
+	for(int i=0;i<fields.length;i++){
+		Field field=fields[i];
+		field.get(test);						//	获取初始值
+		if(Field.getType().equals(int.class)	//	判断字段类型
+			field.set(test,10);
+		else 
+			field.set(test,"chen");
+		field.get(test);						//	获取设置之后的值
+	}
+  --------------------------------------------------
+  
+Annotation  
+  Annotation 是建立在反射机制的基础上
+  Annotation 需要使用 @interface（表明实现 Annotation 接口）来修饰，其内部与类有些类似，但是没有访问修饰符
+	public @interface testAnnotation{
+		String describe() default "描述";
+		Class type();
+	}
+	* Annotation 中能使用的类型只有 String,Class,primitive,enumerated 和 annotation
+	* 通过 default 可以指定默认值
+  可以使用 @Target 指定针对的程序元素，如构造方法，字段等等，值为 ElementType 的枚举常量，如下
+	ANNOTATION_TYPE
+	TYPE
+	CONSTRUCTOR
+	FIELD
+	METHOD
+	PARAMETER
+	LOCAL_VARIABLE
+	PACKAGE
+  可以使用 @Retention 指定运行的范围，有源代码，字节码和运行时三种，值为 RetentionPolicy 的枚举常量，如下
+	SOURCE
+	CLASS
+	RUNTIME
+  Constructor,Method,Field 类都继承了 AccessibleObject 类，该类定义了一些获取注释信息的方法（前提是 Annotation 的 Retention 设置为运行时范围）
+  	isAnnotationPresent(Class<T>annotation)		//	是否被注释
+  	getAnnotation(Class<T>annotation)			//	获取指定注释
+  	getAnnotations								//	获取所有注释
+  	getParameterAnnotations						//	获取所有参数的注释（构造函数的构参和函数的形参），是一个二维数组
+ 	------------------------------------------------------------------
+  	import java.lang.annotation.*;
+	@Target(ElementType.CONSTRUCTOR)			//	只能修饰构造函数
+	@Retention(RetentionPolicy.SOURCE)			//	如果不是 SOURCE 的话，下面的 bool 为 false
+	public @interface test {
+		String describe() default "hello world";
+		Class something() default int.class;
+	}
+	--------------------------
+	public class hello {
+		@test
+		public hello() {
+			
+		}
+		public static void main(String[] args) {
+			Constructor<hello>nihao=hello.class.getConstructor();	
+			boolean bool=nihao.isAnnotationPresent(test.class);
+			if(bool) {
+				test t=nihao.getAnnotation(test.class);
+				System.out.println(t.describe());
+				System.out.println(t.something());
+			}
+		}
+	}
+	--------------------------------------------------------------------------
+  
+枚举类型
+  通过 enum 指定为枚举类型（××××枚举类型中的常量使用逗号隔开，每个常量相当于一个实例化对象××××）
+  常用方法
+  	values		枚举类型来调用，获取一个常量数组
+  	ordinal		常量来调用，获取常量的索引值
+  	valueOf		将字符串转化为常量 	
+  	-----------------------------------------------------------------
+	public class TestEnum {
+		/*
+		 *	枚举类型
+		 */
+		public enum week{
+			Monday("one"),Tuesday("two"),Wednesday("three"),Thursday,Friday,Saturday,Sunday;	//	逗号隔开
+			private String describe;															//	每个常量都有 describe 这个属性
+			private week() {																	// 	空的构造函数
+				describe="null";
+			}
+			private week(String describe) {														//	如 Monday("one") 就用到这个构造函数
+				this.describe=describe;
+			}
+			public String getDescribe() {														//	由常量来调用
+				return describe;
+			}
+		}
+		/*
+		 *	枚举类型测试
+		 */
+		public static void main(String[] args) {
+			for(int i=0;i<week.values().length;i++)
+				System.out.println(week.values()[i]+" "+week.values()[i].getDescribe());		//	Monday one ...
+			System.out.println(week.valueOf("Monday") instanceof week);							//	true
+		}
+	}
+	---------------------------------------------------------------------	
+
+泛型
+  泛型类，class xxx <T>，泛型只能针对类，不能是基本类型（int，float...）
+  	class Test<U>{
+  		U str;
+  		void setStr(U str){
+  			this.str=str;
+  		}
+  		U getStr(){
+  			return Str;
+  		}
+  	} 
+  限制泛型
+  	class xxx <T extends Xxx> 		
+  	× Xxx 可以是类也可以是接口，T 必须实现或继承 Xxx
+  泛型通配符 
+  	class xxx <? extends Xxx>		
+  	class xxx <? super Xxx>
+  × 限制泛型可以用于创建泛型类，泛型通配符不行
+  		class xxx <T extends Object>	//	如果把 T 改为 ? 将报错
+  × 泛型通配符只能用于操作已有信息（读取或删除），而不能加入新的信息（插入或更新）
+  -----------------------------------------------------
+  		Test<String>s=new Test<>();
+		s.setStr("nihao zhongguo");
+		System.out.println(s.getStr());
+		Test<?>x=s;						//	泛型一般是这么使用的，不然使用 get 的时候只能是 null（因为不能使用 set）
+		System.out.println(x.getStr());
+
+线程
+  Thread 构造函数与常用方法
+  	Thread(String name)
+  	Thread(Runnable r)
+  	Thread(Runnable r,String name)
+  	run					线程要进行的动作，Thread 中的 run 是空方法，所以子类需要重写
+  	start				开启线程，一个线程在结束之前只能被开启一次，否则报错
+  	setPriority(i)		设置线程的优先级（1-10），默认为 5，不是说低优先级要等到高优先级全部执行完才能动，只是执行的几率小而已
+  	sleep(mills)		Thread 的静态方法，参数为毫秒，使线程进入睡眠状态，因为可能被打断睡眠，所以需要 try-catch
+  	interrupt			中断，可以结束 sleep
+  	wait				陷入等待状态，和 sleep 一样需要 try-catch，必须用在同步代码中
+  	notify/notifyAll	唤醒等待的线程，必须用在同步代码中
+  	join				加入，如 B.join() 使 B 线程进入介入当前线程 A，等到 B 线程运行完毕之后 A 线程才能运行
+  线程使用方法
+	通过继承 Thread 类然后重写 run 方法
+  	通过实现 Runnable 接口，初始化一个 Runnable 对象，通过 Thread 的构造函数实现线程
+  	------------------------------------------
+  	class TestThread extends Thread{
+		int i=20;
+		@Override
+		public void run(){
+			while(true) {						//	推荐在 run 方法中使用无限循环来执行线程，然后通过其他条件中止运行
+				System.out.println("hello");
+				if(i--==0)	return;
+			}
+		}
+  	}  
+  	public class Test {
+		public static void main(String[] args) {
+			TestThread testThread=new TestThread();
+			Thread testThread2=new Thread(
+				new Runnable() {				//	这里通过匿名方法来实现 Runnable 接口，该接口含有一个 run 方法
+					@Override
+					public void run() {
+						while(true) {
+							System.out.println("two "+i--);
+							if(i--==0)	return;
+						}
+					}
+				}
+			);
+			testThread.start();
+			testThread2.start();
+		}
+	}
+	× 事实上这样运行看不出线程之间的交替，因为在一次 cpu 时间内就可以完成循环，可以使用 sleep 或 setPriority 来实现
+  	-------------------------------------------------
+  实现线程同步有两种方法，一种是同步块（ synchronized(object)，系统自带 ），一种是同步方法（ synchronized void test()，自己创建 ）
+  	public void run(){
+  		while(true){
+  			synchronized(""){		//	同步块和同步方法是类似的，同步方法的话在外面声明，一样要放到 run 中来使用
+  				i--;
+  			}
+  			if(i==0)	break;
+  		}
+  	}
+  java 的线程同步指的是互斥，经常与 wait 和 notify 方法一起用，相当于信号量的 P 和 V
+  	--------------------------------------------------
+  	class TestThread extends Thread{
+		static int i=5;							//	资源必须是静态，因为是共享变量
+		static boolean bool=true;
+		public TestThread(String name) {		//	每个线程必须含有一个名字
+			super(name);
+		}
+		@Override
+		public void run(){
+			while(bool){	
+				Object lock=(Object)i;					//	资源 i 必须转化为 Object 类，因为 wait 和 notify 是 Object 类的方法
+				synchronized (lock) {
+					if(this.getName().equals("in")) {	//	this 可以换成 Thread.getCurrentThread()
+						try {
+							lock.notify();				//	唤醒线程，不是马上唤醒，而要等到当前线程释放对象锁之后
+							Thread.sleep(2000);			//	在检测 i=0 之前需要睡眠，因为程序运行太快会导致接收不到最准确的 i 的值
+							if(i==0) return;			//	这句话是因为 i=0 时还有一个线程在等待栈中，但是这个线程是不需要再继续的
+							i+=5;
+							System.out.println("in "+i);
+						}catch(Exception e) {}
+					}
+					else {
+						if(i>=10) {
+							i-=10;
+							System.out.println("out "+i);
+							if(i==0) bool=false;		//	i=0 时结束循环
+						}else 
+							try {
+								System.out.println("out wait "+i);
+								lock.wait();			//	如果 i 不够减的话就陷入等待，让出资源
+								if(i>=10) {				//	wait 后面必须要有代码块，因为被唤醒之后是从原来的位置继续执行的
+									i-=10;
+									System.out.println("out "+i);
+									if(i==0) bool=false;
+								}
+							}catch(Exception e) {}
+					}
+				}
+			}
+		}
+	}
+	----------------------------------------------------------------------
+	
+网络通信
+  URL 
+  	URL(String url) throws MalformURLException	//	url 的格式必须是 http://www.baidu.com，否则会抛出异常，注意要有 http://
+  	使用 openStream 方法返回一个 InputStream 对象，可以读取指定网页的 html 文件，用来爬虫
+  地址类，InetAddress
+  	初始化不用构造方法，使用静态方法 getByName 或 getLocalHost，都是 InetAddress 型
+  		InetAddress.getByName("localhost").toString();	//	localhost/127.0.0.1
+  		InetAddress.getLocalHost().toString();			//	wanna-PC/127.0.0.1
+	初始化之后可以使用常用方法，getHostAddress 获取 IP，getHostName 获取域名，都是 String 型
+  TCP 通信，通过 Socket 和 ServerSocket 两个类来模仿三次握手
+  	Socket(InetAddress address,int port) 
+  		可以通过 getInputStream 和 getOutputStream 获取输入流和输出流
+  		获取输入流的时候如果没有获取到就会进入阻塞状态，直到有输入流进入，所以一般使用多线程来处理输入输出
+  	ServerSocket()
+  	ServerSocket(int port)
+	ServerSocket(int port,int backlog)
+	ServerSocket(int port,int backlog,InetAddress address)
+		backlog 指的是 accept 的连接栈大小，如果连接数量超过这个大小，则会发生溢出，在设计超高并发时才会用到
+		address 和 port 用来绑定地址和端口，ServerSocket 必须要有一个访问入口，一般只使用 port（第二种构造方法）
+		ServerSocket 常用方法
+		× accept				最重要的方法，返回一个 Socket 对象，用于接受连接请求，如果没有连接请求则阻塞
+		× getInetAddress		获取地址
+		× getLocalPort			获取端口
+		× isClosed			
+		× close			
+		ServerSocket 只是用来建立连接而已，最后还是要通过 accept 生成的 Socket 对象来完成通信
+		------------------------------------------
+		ServerSocket server=new ServerSocket(1025);	//	端口有效数字为 0-65535，其中 1024 之前的端口号不建议用，因为那是国际标准端口，如 80
+		Socket socket=server.accept();
+		OutputStream out=socket.getOutputStream();	//	建立指向客户端的输出流
+		Scanner scanner=new Scanner(System.in);
+		while(scanner.hasNext())
+		out.write(scanner.nextLine().getBytes());
+		-------------------------------------------
+  UDP 通信，不建立连接的数据通信，通过 DatagramPacket 和 DatagramSocket 来实现
+  	DatagramPacket(byte[]b,int length,InetAddress address,int port)		//	传递时使用的数据包对象，所以需要指定目的地址与目的端口
+  	DatagramPacket(byte[]b,int length)									//	接收时使用的数据包对象
+  	× 数据包对象中包含传输的对象，使用 getData 方法得到一个 byte[] 对象，使用 getLength 得到数据包中 byte[] 的长度
+  	DatagramSocket()													//	传递时使用，系统分配端口来发送数据包，数据包中含有地址，不用担心发错
+  	DatagramSocket(int port)											//	接收时使用，必须指定端口，数据包对应的地址
+  	DatagramSocket(int port,InetAddress address)						//	同上，适用于多网卡的设备
+  	× 使用 send 发送数据包，用 receive 来接收数据包
+  		----------------------------------------------------------
+	  	byte[]b=new byte[1024];
+	  	DatagramSocket socket=new DatagramSocket(1024);
+		DatagramPacket packet=new DatagramPacket(b, b.length);
+		socket.receive(packet);
+		System.out.println(new String(packet.getData(),0,packet.getLength()));
+		-------------------------------------------------------------
+	MulticaseSocket 是 DatagramSocket 的子类，使用广播来传递数据，接收和传递双方必须加入同一个广播网络中，使用 joinGroup(InetAddress address) 
+	× 广播不能指定具体地址，只能有端口
+	× 广播地址为 224.0.0.0-224.255.255.255
+	× 如果实在本机电脑上使用的话可以在发送发的 socket 中使用 setTimeToLive(1)，即 TTL，表示只在本机广播
+
+IO
+  nio (new IO) 提供 FileChannel 和 FileLock 类来进行文件加锁，其他进程无法读写被加锁的文件
+  	RandomAccessFile in=new RandomAccessFile(file,"rw");	//	使用 FileInputStream 时会抛出异常，使用 RandomAccessFile 就没事
+  	FileChannel channel=in.getChannel();					//	获取 FileChannel 对象
+  	FileLock lock=channel.tryLock();						//	通过 FileChannel 对象获取 FileLock 对象，同时文件加锁
+  	......
+  	lock.release();											//	使用之后文件解锁
+  	* 事实上，在 Linux 跑代码的时候没法加锁，没在 win 下试过
+
+jdk7 特性
+  switch 允许字符串
+  int 允许二进制数，0b 开头，如 0b11==3
+  数值类型可以使用下划线，但是必须是在数值之间，如 1_234_56==123456
+  泛型简化，如 List<String>list=new ArrayList<String>();		//	后面可以写成 new ArrayList<>() 
+  try-with-resources，即 try(...)，在括号中的资源（含有 close 方法的对象）只要实现了 AutoCloseable 接口，在运行完语句后会自动关闭（大多数都实现了） 
+	try(InputStream in=new FileInputStream(file)){
+		in.read();
+	}
+  同时捕获多个异常，使用 | ，如 catch(IOException|SQLException e)，注意只需要一个变量 e
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+
+

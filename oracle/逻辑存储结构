@@ -1,0 +1,67 @@
+* 逻辑存储结构由数据块，区，段，表空间组成
+    数据块      最小的 IO 单元
+    区          最小的存储单元，由具体的操作系统来决定
+    段          存储对象，一个段对应一个对象
+    表空间      逻辑上由多个段组成，物理上由多个数据文件组成，段在数据文件中可以交叉存储
+
+* 表空间
+    system 表空间   系统表空间，保存着数据字典，pl/sql 程序和数据库对象的定义
+    sysaux 表空间   系统辅助表空间，分摊 system 表空间的压力
+    撤销表空间      由回滚段组成，一个数据库实例只能使用一个撤销表空间
+    临时表空间      由临时段组成，用于提供执行排序等操作所需要的内存开销，10g 开始引入临时表空间组的概念
+    用户表空间
+    表空间又可以分为大文件表空间和小文件表空间，两者的存储上限一致
+        大文件表空间    一个表空间只拥有一个数据文件
+        小文件表空间    一个表空间能拥有多个数据文件
+    使用 DBCA 创建数据库时，默认创建 system 表空间，sysaux 表空间，temp 表空间，undotbs1 表空间，users 表空间和 example 表空间
+    
+    表空间的区管理方式
+        字典管理方式    使用数据字典中的表来管理存储空间的分配，当存储结构发生改变会更新相应表，产生回滚段和重做信息。逐渐被淘汰
+        本地管理方式    在数据文件中维护一个“位图”，当存储结构发生改变时只会更新位图，不产生多余的信息
+        注意，存储空间的分配与管理是对区的分配与管理!
+    表空间的管理
+        区的分配方式：自动扩展 autoallocate ，定制 uniform ，定制即所有区大小都是一样的   //  extent management
+        区的管理方式：一般是本地管理，local
+        段的分配方式：自动管理 auto ，手动管理 manual （pctfree,pctused)                //  segment space management
+        create tablespace user 
+            datafile absolute_filename size 10M
+            extent management local uniform size 512K
+            segment space management manual;
+    表空间可以设置为可读或读写 alter tablespace xxx read only|read write
+    表空间可以设置为脱机或联机 alter tablespace xxx online|offline
+    数据库默认表空间为 users ，默认临时表空间为 temp ，可以通过 alter database default [temporary] tablespace xxx 设置
+    表空间的备份，联机备份
+        alter tablespace xxx begin backup;
+        ...   //  在操作系统上备份文件到指定位置
+        alter tablespace xxx end backup;
+    表空间的删除    //  不能删除正在使用的表空间和系统表空间
+        drop tablespace xxx [including contents and datafiles] [cascade constraints]
+    大小文件表空间的创建
+        可以通过 database_properties 表查看表空间默认类型，一般为 smallfile
+        create bigfile tablespace xxx datafile absolute_filename size xxxM
+        大文件表空间只有一个数据文件，所以可以把对数据文件的操作改为对表空间的操作
+        alter tablespace xxx resize 30M
+    注意：
+        临时表空间中区的分配方式只能是 uniform ，避免在临时段中产生过多的存储碎片
+        临时表空间组需要在创建第一个临时表空间时，在最后加上 tablespace group xxx 
+        如果没有创建撤销表空间，则由 system 表空间管理回滚段
+        撤销表空间可设置为手动管理和自动管理，通过修改初始化参数 undo_management 为 auto 和 manual ，手动管理逐渐被淘汰
+        创建撤销表空间中只能指定 datafile 和 extent management local     
+            
+* 数据块
+  数据块分标准块和非标准块，标准块大小由初始化参数 db_block_size 指定
+  数据块由块头部和存储区组成，块头部保存着数据块中行的信息，存储区分为空闲区和行数据区
+  行数据区中的每个行都有一个 rowid ，地址从高到低为对象，数据文件，数据块，块内地址
+  当段管理方式设为手动时通过设置 pctfree 和 pctused 来管理数据块
+    pctfree 用来更新行
+    pctused 用来插入行，当行数据区大于 pctused 时不能再进行插入操作，数据块被标为 used
+  更新时如果行大小超过数据块大小则会发生行迁移，只在原来的数据块中留下一个引用
+  插入时如果行大小超过数据块大小则会发生行链接
+  oracle 为表空间中每一个数据段和索引段维护一个“可用块列表”，被标为 used 的数据块不会在该列表中
+* 区
+  数据块构成区，区构成段，段构成表空间
+  一般情况下，段中的区不会被回收，但是回滚段如果指定了 optimal 会定时回收空置的区
+* 段
+  段分四种，数据段，索引段，临时段，回滚段
+  如果大量使用排序的操作，可以修改初始化参数 sort_area_size 的值
+    

@@ -1,0 +1,112 @@
+* xml需要声明和根标记，根标记可以拥有多个子标记，呈树形结构
+    
+    默认声明为
+        <?xml version="1.0" encoding="utf-8"?>
+        如果 xml 文件中只有英文，可以把 encoding 改为 iso-8859-1
+        xml version 目前只有 1.0 版本
+  
+  xml 的语法规则非常严格，对标记名严格区分大小写，标记中的文本数据连同空格与换行符都有算在内
+    标记    ：标记含有属性，属性和标记名一样可以随意取，也可以互换，只要能清晰的反映要表达的内容就行，处理交由解析器进行
+    文本    ：在 SAX 中的 characters 中空格与换行符都有算
+    CDATA  ：xml 含有  < > & ' "  五种特殊符号，如果要表达的内容含有这些符号，就需要 CDATA 来转化
+            作用如 java 的 // 和 /* */ ，格式为 <![CDATA[.......]]> ,如下
+            
+            <hello>
+                <![CDATA[
+                    boolean boo=true&&false
+                    <你好>
+                ]]>
+            </hello>
+
+* xml 文件由 xml 解析器来解释，在 jsp 中 xml 解析器有 DOM 解析器和 SAX 解析器
+    DOM 文件对象模型 ，为 W3C 制定的一套规范标准，原理是在内存中建立与 xml 文件对应的树形结构图
+    基本步骤为
+
+    import javax.xml.parsers.*;     //  DocumentBuilderFactory , DocumentBuilder
+    import org.w3c.dom.*;           //  Document
+    ......
+    DocumentBuilderFactory factory=DocumentBuilderFactory.newInstance();
+    DocumentBuilder builder=factory.newDocumentBuilder();
+    Document doc=builder.parse(new File("web.xml"));
+
+    doc 中的每个节点都为 node 型对象，每个 node 型对象可以根据 getNodeType 得到其类型（例如 Node.ELEMENT_NODE)，
+    然后转化为相对应的 Element，Text 或 CDATASection 对象
+    document对象
+        getDocumentElement                  //  得到根标记
+    document 对象的节点方法
+        Element 
+            getTagName
+            getTextContent
+            getChildNodes                   //  得到含有所有子标记的链表，类型为 nodelist
+            getElementsByTagName(name)      //  得到所有名字为 name 的节点列表，类型为 nodelist
+            hasAttribute(attri)
+            getAttribute(attri)             //  得到属性的值
+            getAttributes					//	得到所有的属性集合，返回 NamedNodeMap 对象
+        Text 
+            getWholeText
+        CDATASection
+            getWholeText
+        
+        NodeList
+            getLength                       //  得到列表长度
+            item(i)                         //  从 0 开始，得到 第i个 子节点，类型为 node
+        Node
+            getNodeType                     //  得到节点类型，返回 Node 的一个枚举类型
+            getNodeName						//	返回节点名字
+            getNodeValue					//	针对属性，返回属性的值
+    
+    DOM 解析器处理 xml 文件很方便，但是当文件很大时，就会在内存占用相当大的空间，与它不同的 SAX 解析器是基于事件处理机制的
+    SAX simple api for xml
+    SAX 通过 DefaultHandler 子类重写的方法 来处理 xml 文件，常用的方法有五个，都为 public void 型，如下：
+    startDocument
+    endDocument
+    startElement(uri,localName,qName,attributes)
+    endElement(uri,localName,qName)         //  分别为名称空间，标记名，带前缀的标记名
+    characters(char[],start,length)         //  注意 characters 是负数     
+    构建方法如下
+
+    import javax.xml.parsers.*;             //  SAXParserFactory,SAXParser
+    import org.xml.sax.helpers.*;           //  DefaultHandler
+    import org.xml.sax.*;
+    ......
+    SAXParserFactory factory=SAXParserFactory.newInstance();
+    SAXParser parser=factory.newSAXParser();
+    Handler handler=new Handler();
+    parser.parse("web.xml",handler);       //  和 DOM 有差
+    ......
+    class handler extends DefaultHandler{
+        ......
+        public void startDocument(){......}
+        public void endDocument(){......}
+        ......
+    }
+    //  sax 现在有两个版本 sax 和 sax2，sax 不支持名称空间，sax2 支持，书里教的知识是 sax
+    //  xmlns:tomcat="127.0.0.1:8080"         //  127.0.0.1:8080 为名称空间，tomcat 为前缀
+    //  <tomcat:jsp tomcat:text="127.0.0.1：8080/jsp/text.jsp">baidu</tomcat:jsp>
+    //  在 sax2 中，标记的 uri 为 127.0.0.1:8080 ，localName 为 jsp，qName 为 tomcat:jsp
+    //  在 sax2 中，属性的 uri 为 127.0.0.1：8080 ，localName 为 text，qName 为 tomcat:text ，value 为 127.0.0.1:8080/jsp/text.jsp
+    //  而在 sax 中，jsp 标记的 uri 为空，qName 为 tomcat：jsp ，localName 为空，因为识别不了
+    //  总结：在 sax 中 qName 为标记名，其他全为空; 名称空间只是为了扩展功能，但不常用
+
+
+    xml 主要用来描述数据的结构，但不负责数据的显示，有时候需要浏览器直接显示文件中的结构和内容，这时候解析器就派不上用场了
+    xml 可以和 css 联合，结果能与 html 一样，一般使用的是 css 的标记选择器，需要使用如下语句：
+        <?xml-stylesheet href="uri" type="text/css"?>
+    css 样式
+        显示方式的属性 display
+            block               //  块方式
+            line                //  行方式
+            list-item           //  列表方式
+            none                //  无
+        字体的属性
+            font-family         //  字体名称，比如宋体
+            font-style          //  是否使用斜体：normal，italic
+            font-weight         //  文字对比度[100,900]，normal（400），bold（700）
+            font-size           //  以磅为单位，pt
+        文本样式的属性
+            text-align          //  对齐方式：left，right，center，justify
+            text-indent         //  段首的缩进量，像素 px 或磅 pt
+            text-transform      //  改变文本大小写，uppercase，lowercase，capitalize，none
+            text-decoration     //  设置下划线，none，underline,overline,line-through,blink
+            vertical-align      //  垂直对齐方式，sub,super,top,middle,bottom,text-top,text-bottom,baseline
+            line-height         //  几倍行距
