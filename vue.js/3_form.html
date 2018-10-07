@@ -1,0 +1,62 @@
+<html>
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+<body>
+    v-model 和文本框绑定
+    <div id="app">
+        <!-- placeholder 是 html5 的占位符，当输入字符为空时显示 -->
+        <input type="text" v-model="message" placeholder="edit me">
+        {{message}}
+    </div>
+    <script>
+        new Vue({
+            el:'#app',
+            data:{
+                message:''
+            }
+        })
+    </script><br><br>
+    <!--------------------------------------------------------------------------->
+    v-mocel 和多选框绑定
+    <form id="app2">
+        <label for="google">google</label>
+        <input type="checkbox" id="google" value="google" v-model="checked">
+        <label for="baidu">baidu</label>
+        <input type="checkbox" id="baidu" value="baidu" v-model="checked">
+        <label for="youdao">youdao</label>
+        <input type="checkbox" id="youdao" value="youdao" v-model="checked">
+        <label for="sogou">sogou</label>
+        <input type="checkbox" id="sogou" value="sogou" v-model="checked"><br>
+        {{checked}}
+    </form>
+    <script>
+        new Vue({
+            el:'#app2',
+            data:{
+                checked:["google"]
+            }
+        })
+    </script><br><br>
+    <!--------------------------------------------------------------------------->
+    v-model 使用 number 修饰符，如果文本框中输入的为数字，则会转化为数字格式
+    <form id="app3">
+        <input type="text" v-model.number="num">
+        <button @click="view()">test</button>
+    </form>
+    <script>
+        new Vue({
+            el:'#app3',
+            data:{
+                num:1
+            },
+            methods: {
+                view:function(){
+                    // 如果上面的 v-model 后面没有加 .number
+                    // 则即使输入的值为数字也会被识别为 string
+                    // 和 .number 相似的还有 .trim 和 .lazy
+                    alert(this.num+' is '+typeof this.num);
+                }
+            }
+        })
+    </script>
+</body>
+</html>

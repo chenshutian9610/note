@@ -1,0 +1,35 @@
+<html>
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+<script src="https://unpkg.com/vue-router/dist/vue-router.js"></script>
+<body>
+    点击链接，页面不会重载<br><br>
+    <div id="app">
+        <router-link to="/china">china</router-link>
+        <router-link to="/america">america</router-link>
+        <br><router-view></router-view>
+    </div>
+    <script>
+        const china={template:"<p>Welcome to China</p>"}
+        const america={template:"<p>Hello America</p>"}
+        new Vue({
+            el:"#app",
+            // router 属性是一个 VueRouter 实例
+            router:new VueRouter({
+                // VueRouter 初始化需要一个 routes（绑定链接与组件）
+                routes:[
+                    // 路由是通过组件实现的
+                    {path:"/china",component:china},
+                    {path:"/america",component:america}
+                ]
+            })
+        })
+        // 下列写法作用同上
+        // const routes=[
+        //     {path:"/china",component:china},
+        //     {path:"/america",component:america}
+        // ]
+        // const router=new VueRouter({routes})
+        // new Vue({router}).$mount("#app")
+    </script>
+</body>
+</html>

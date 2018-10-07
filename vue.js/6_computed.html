@@ -1,0 +1,57 @@
+<html>
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+<body>
+    <div id="app">
+        原来的值为 ( {{msg}} )<br>
+        使用 computed 方式反转字符串:&nbsp;&nbsp;{{reverseMsg}}<br>
+        使用 methods 方式反转字符串:&emsp;{{reverseMsg2()}}
+    </div>
+    <script>
+        new Vue({
+            el:'#app',
+            data:{msg:'hello world'},
+            computed: {
+                reverseMsg:function(){
+                    // 需要一个 this（指向 vue 实例）
+                    return this.msg.split('').reverse().join('')
+                }
+            },
+            // methods 使用时需要 ()，computed 不用
+            // computed 有依赖缓存，只有依赖的变量发生改变时才会重新计算；methids 没有缓存
+            methods: {
+                reverseMsg2:function(){
+                    return this.msg.split('').reverse().join('');
+                }
+            }
+        });
+    </script><br><br>
+    <!--------------------------------------------------------------------------->
+    <div id="app2">
+        打开终端输入命令 vm.site="name url" 格式字符串<br><br>
+        {{name}}&nbsp;
+        {{url}}
+    </div>
+    <script>
+        // computed 可含有 getter 和 setter 方法
+        var vm=new Vue({
+            el:'#app2',
+            data:{
+                name:'google',
+                url:'https://www.google.com'
+            },
+            computed:{
+                site:{
+                    get:function(){
+                        return this.name+' '+this.url;
+                    },
+                    set:function(str){
+                        var obj=str.split(' ');
+                        this.name=obj[0];
+                        this.url=obj[1];
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

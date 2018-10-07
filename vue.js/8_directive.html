@@ -1,0 +1,66 @@
+<html>
+<title>自定义 vue 命令</title>
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+<body>
+    <div id="app">
+        页面载入时文本框将获得焦点&emsp;
+        <input v-concentrate>
+    </div>
+    <script>
+        new Vue({
+            el:"#app",
+            directives: {
+                concentrate:{
+                    // inserted 是一个钩子函数，类似的还有 bind，unbind，update 和 componentUpdated
+                    // 钩子函数常用入参有 el，binding 和 vnode
+                    inserted:function(el){
+                        el.focus()
+                    }
+                }
+            }
+        })
+    </script><br>
+    ---------------------------------------------------------------------------
+    <div id="app2" v-triski:country.china.english="msg"></div><br>
+    <script>
+        new Vue({
+            el:'#app2',
+            data:{
+                msg:"hello world"
+            },
+            directives: {
+                // vue 指令其实和 xml 中的标记一样，没有什么特殊意义，其所有的功能都是我们手动赋予的
+                triski:{
+                    bind:function(el,binding,vnode){
+                        var s=JSON.stringify;
+                        el.innerHTML=
+                            "显示 v-triski:country.china.english=‘msg' 指令的详细信息"+"<br><br>"+
+                            "name:"+s(binding.name)+"<br>"+
+                            "value:"+s(binding.value)+"<br>"+
+                            "expression:"+s(binding.expression)+"<br>"+
+                            "argument:"+s(binding.arg)+"<br>"+
+                            "modifiers:"+s(binding.modifiers);
+                            // "vnode keys:"+Object.keys(vnode).join(', ');
+                    }
+                }
+            }
+        })
+    </script>
+    ---------------------------------------------------------------------------
+    <br>通过自定义指令改变标记 style <br><br>
+    <div id="app3" v-style="{color:'red',fontSize:'18px'}">hello world</div>
+    <script>
+        new Vue({
+            el:'#app3',
+            directives:{
+                style:{
+                    bind:function(el,binding){
+                        el.style.color=binding.value.color
+                        el.style.fontSize=binding.value.fontSize
+                    }
+                }
+            }
+        })
+    </script>
+</body>
+</html>

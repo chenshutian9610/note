@@ -1,0 +1,44 @@
+<html>
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+<body>
+    <!-- if -->
+    使用 v-if 判断文本框中输入的数字（1,2,3,4,其他）
+    <div id="app1">
+        <input v-model="num">
+        <div v-if="num==1">one</div>
+        <div v-else-if="num==2">two</div>
+        <div v-else-if="num==3">three</div>
+        <div v-else-if="num==4">four</div>
+        <div v-else>others</div>
+    </div>
+    <script>
+        new Vue({
+            el:'#app1',
+            data:{
+                num:0
+            }
+        });
+    </script><br>
+    <!--------------------------------------------------------------------------->
+    <!-- for -->
+    使用 v-for 循环遍历 objs 中的所有对象
+    <div id="app2">
+        <!-- 格式类似 c#，采用 for-in -->
+        <div v-for="obj in objs">
+            {{obj.name}}
+        </div>
+    </div>
+    <script>
+        new Vue({
+            el:'#app2',
+            data:{
+                objs:[
+                    {name:'triski'},
+                    {name:'chen'},
+                    {name:'陈树添'}
+                ]
+            }
+        })
+    </script>
+</body>
+</html>

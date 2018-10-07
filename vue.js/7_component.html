@@ -1,0 +1,168 @@
+<html>
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+<body>
+    <div id="app">
+        使用全局组件<br>
+        <hello></hello>
+    </div>
+    <script>
+        Vue.component('hello', {
+            template:'<p>hello world</p>'
+        })
+        // 必须通过 Vue 函数实例化才会生效，否则 <hello> 只是一个普通的标签
+        new Vue({
+            el:'#app'
+        })
+    </script>
+    <!--------------------------------------------------------------------------->
+    <div id="app2">
+        使用局部组件<br>
+        <hi></hi>
+        <!-- 如果在这里使用 <messae> 标记，会受全局组件影响 -->
+    </div>
+    <script>
+        new Vue({
+            el:'#app2',
+            components: {
+                'hi':{template:"<p>hello china</p>"}
+            }
+        })
+    </script>
+    <!--------------------------------------------------------------------------->
+    <div id="app3">
+        使用组件属性（当 props 是一个数组时）<br>
+        <message msg="hello Vue.js"></message>
+    </div>
+    <script>
+        new Vue({
+            el:'#app3',
+            components:{
+                'message':{
+                    // 当 props 是数组时使用 []
+                    props:['msg'],
+                    template:"<p>{{msg}}</p>"
+                }
+            }
+        })
+    </script><br>
+    ---------------------------------------------------------------------------
+    <div id="app4">
+        通过 v-bind 实现动态组件属性<br>
+        <input v-model='customMsg'>
+        <message v-bind:msg="customMsg"></message>
+    </div>
+    <script>
+        new Vue({
+            el:'#app4',
+            data:{
+                customMsg:'you can edit by text box'
+            },
+            components:{
+                "message":{
+                    props:['msg'],
+                    template:'<p>{{msg}}</p>'
+                }
+            }
+        })
+    </script><br>
+    ---------------------------------------------------------------------------
+    <div id="app5">
+        灵活使用组件属性
+        <ol>
+            <iterator v-for="item in items" v-bind:element="item"></iterator>
+        </ol>
+    </div>
+    <script>
+        new Vue({
+            el:'#app5',
+            data:{
+                items:[
+                    {text:'China'},
+                    {text:'America'},
+                    {text:'Japan'}
+                ]
+            },
+            components:{
+                iterator:{
+                    props:['element'],
+                    template:'<li>{{element.text}}</li>'
+                }
+            }
+        })
+    </script><br>
+    ---------------------------------------------------------------------------
+    <div id="app6">
+        使用组件属性（当 prop 是一个对象时）<br>
+        <test-object-prop y="triski"></test-object-prop>
+    </div>
+    <script>
+        new Vue({
+            el:'#app6',
+            components: {
+                // 这里不能写 test-object-prop，因为减号会报错
+                testObjectProp:{
+                    template:"<a>属性 x 的值为 {{x}}<br>属性 y 的值为 {{y}}</a>",
+                    // 这里是 {}，而不是 []
+                    props:{
+                        x:{
+                            // 类型不能是 number 这些基本类型，必须是对象类型
+                            type:Number,
+                            default:10086
+                        },
+                        y:{
+                            type:String,
+                            // 使用了 required 后，必须使用该属性
+                            required:true
+                        }
+                        // 暂时不知道以下对象怎么使用
+                        // ,z:{
+                        //     validator:function(value){
+                        //         return value>19
+                        //     }
+                        // }
+                    }
+                }
+            }
+        })
+    </script><br><br>
+    --------------------------------------------------------------------------
+    <div id="app7">
+        通过事件完成父组件与子组件的通信<br><br>
+        点击下面的按钮会触发父组件的 incrementHandler 函数，使按钮中的值自增，<br>
+        并触发自定义的 increment 事件，从而调用子组件的 increment 函数，使子组件的数字自增<br><br>
+        {{total}}&emsp;
+        <increment @increment="increment"></increment>
+        <increment @increment="increment"></increment>
+    </div>
+    <script>
+        new Vue({
+            el:"#app7",
+            data:{
+                total:0
+            },
+            methods:{
+                increment:function(){
+                    this.total++
+                }
+            },
+            components:{
+                increment:{
+                    template:"<button @click='incrementHandler'>{{count}}</button>",
+                    data:function(){
+                        return {
+                            count:0
+                        }
+                    },
+                    methods:{
+                        incrementHandler:function(){
+                            this.count++
+                            // 触发事件，利用了事件的全局性实现父子组件的通信
+                            this.$emit('increment')
+                        }
+                    }
+                }
+            }
+        })
+    </script>
+</body>
+</html>

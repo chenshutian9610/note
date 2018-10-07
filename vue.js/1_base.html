@@ -1,0 +1,72 @@
+<html>
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+<style>
+    .reding{
+        color:red;
+    }
+</style>
+<body>
+    <div id="app">
+        message 的值为 <br> 
+        {{message}} <br><br>
+
+        使用 v-html 的 message 的值为
+        <div v-html='message'></div><br>
+
+        <label for="r">选中将变成红色</label>
+        <input type="checkbox" v-model="red" id='r'>
+        <div v-bind:class="{'reding':red}">
+            hello world
+        </div><br>
+
+        使用 v-bind 动态绑定网址，点击下面的链接将进入我的 gittub<br>
+        <a v-bind:href="url">go to triski's gittub</a><br><br>
+
+        <label for='v'>使用 v-model 控制可见性</label>
+        <input type="checkbox" id="v" v-model="seen">
+        <div v-if="seen">now you can see me!</div><br>
+
+        <label for="checkbox">使用 v-show 控制可见性</label>
+        <input type="checkbox" v-model="visible" id="checkbox">
+        <div v-show="visible">now you can see me!</div><br>
+
+        <br><input v-model="num" size='3' maxlength="3"> 
+        &nbsp;乘以 5 后等于 {{num*5}}<br><br>
+
+        <!-- v-on 可简写为 @，如下为 @click -->
+        测试事件
+        <button v-on:click="show">click me</button><br><br>
+
+        <!-- | 后面表示过滤器函数，可以通过 | 使用多个过滤器，和管道很像 -->
+        通过过滤器函数将 hello world 变为大写，输出如下<br>
+        {{msg|up}}<br><br>
+
+    </div>
+    <script>
+        new Vue({
+            el:'#app',
+            data:{
+                message:'<text>hello world</text>',
+                red:true,
+                url:"https://github.com/free-myself",
+                seen:true,
+                num:5,
+                msg:'hello world',
+                visible:true
+            },
+            methods: {
+                show:function(){
+                    alert("hello world")
+                }
+            },
+            filters: {
+                up:function(value){
+                    if(!value)return '';
+                    value=value.toString().toUpperCase();
+                    return value;
+                }
+            }
+        })
+    </script>
+</body>
+</html>

@@ -1,0 +1,50 @@
+<html>
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+<script src="https://cdn.bootcss.com/vue-resource/1.5.1/vue-resource.min.js"></script>
+<body>
+    <div id="app">
+        <input type="button" @click="get()" value="get">
+        <input type="button" @click="post()" value="post">
+    </div>
+    <script>
+        // 这个例子注定是失败的，ajax 是为了与后台通信，而不是前端页面
+        new Vue({
+                el:'#app',
+                methods:{
+                    get:function(){
+                        // 需要 vue-resource 库的支持
+                        this.$http.get('http://localhost',{name:'triski',sex:'male'}).then(
+                            // 成功时执行
+                            function(){
+                                console.log('success')
+                            },
+                            // 失败时执行
+                            function(){
+                                console.log('请求失败处理');
+                            }
+                        );
+                    },
+                    post:function(){
+                        // 就比 get 多了 {emulateJSON:true}，如果不需要传送参数，第二和第三个参数可以不要
+                        this.$http.post('http://localhost',{name:'triski',sex:'male'},{emulateJSON:true}).then(
+                            function(){
+                                console.log('success')
+                            },
+                            function(){
+                                console.log('请求失败处理');
+                            }
+                        );
+                    }, 
+                }
+            })
+        // 使用全局 ajax
+        // Vue.http.get(url,data).then(success,fail)
+        // Vue.http.post(url,data,options).then(success,fail)
+
+        // 使用实例 ajax
+        // var vm=new Vue()
+        // vm.$http.get(url,data).then(success,fail)
+        // vm.$http.post(url,data,options).then(success,fail)
+    </script>
+</body>
+</html>

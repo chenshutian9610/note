@@ -1,0 +1,33 @@
+<html>
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+<body onclick="alert('body is clicked')">
+    点击屏幕将会触发 body 标记的事件<br><br>
+    <div id="app">
+        <!-- 普通事件 -->
+        <button v-on:click="say('Hi')">sayHi</button><br><br>
+
+        <!-- 带 stop 选项将停止冒泡，相似的还有 prevent -->
+        <button v-on:click.stop="say('Hello')">
+            without propagation
+        </button><br><br>
+
+        <!-- 选项可以串联，67 为 keycode，ctrl 是 vue.js 封装的 keycode -->
+        <button @click.ctrl.67="say('ctrl+c+click')">
+            按住 ctrl+c 再点击
+        </button><br><br>
+    </div>
+    <script>
+        new Vue({
+            el:'#app',
+            data:{
+                val:''
+            },
+            methods: {
+                say:function(message){
+                    alert(message);
+                }
+            }
+        })
+    </script>
+</body>
+</html>

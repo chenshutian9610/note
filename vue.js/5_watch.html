@@ -1,0 +1,51 @@
+<html>
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+<body>
+    <div id="app">
+        {{counter}}<br>
+        <input type="button" value="click me" @click="counter++"><br>
+        <msg id="msg"></msg>
+    </div>
+    <script>
+        var vm=new Vue({
+            el:'#app',
+            data:{
+                counter:1
+            }
+        });
+        // 第一个入参为变化之后的值，第二个为变化之前
+        vm.$watch('counter',function(now,origin){
+            document.getElementById("msg").innerHTML='原始值:'+origin+' 现在:'+now
+        });
+    </script><br><br>
+    <!--------------------------------------------------------------------------->
+    <div id="app2">
+        千米：<input type="text" v-model="kilo">
+        &nbsp;<info id="info"></info><br>
+        米：&emsp;<input type="text" v-model='meter'>
+    </div>
+    <script>
+        var vm2=new Vue({
+            el:'#app2',
+            data:{
+                kilo:0,
+                meter:0
+            },
+            // 属性值表示要监视的值，当值发生变化的时候会触发后面的函数
+            watch: {
+                kilo:function(val){
+                    this.kilo=val;
+                    this.meter=val*1000;
+                },
+                meter:function(val){
+                    this.kilo=val/1000;
+                    this.meter=val;
+                }
+            }
+        });
+        vm2.$watch('kilo',function(now,origin){
+            document.getElementById('info').innerHTML='原始值: '+origin+' 现在: '+now;
+        })
+    </script>
+</body>
+</html>

@@ -1,0 +1,25 @@
+<html>
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+<body>
+    <script>
+        var obj={name:'triski',sex:'male'}    
+        var vm=new Vue({
+            data:{person:obj}
+        })
+
+        // age 会被添加进 person 中，但是 age 没有相应的 getter/setter
+        vm.person.age=23
+        document.write(JSON.stringify(vm.$data.person)+"<br>")
+
+        // Vue 响应接口
+        // id 有相应的 getter/setter
+        Vue.set(obj,'id','007')
+        document.write(JSON.stringify(vm.$data.person)+"<br>")
+        // id 与其 getter/setter 会被删除掉
+        Vue.delete(obj,'id')
+        document.write(JSON.stringify(vm.$data.person))
+
+        // 使用 console.log(vm) 可以看出区别，前提是将 Vue.delete 注释掉
+    </script>
+</body>
+</html>

@@ -1,0 +1,39 @@
+<html>
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+<body>
+    <script>
+        /**
+         *  mixin ，混入，可以看作是继承
+         *  created 为构造函数，methods 中的方法会被继承或重写 
+         */
+        var mixin={
+            created:function(){
+                document.write("实例化<br>")
+                document.write("hello world<br>")
+            },
+            methods:{
+                func_1:function(){
+                    document.write("func_1 from mixin<br>")
+                },
+                func_2:function(){
+                    document.write("func_2 from mixin<br>")
+                }
+            }
+        }
+        var vm=new Vue({
+            mixins: [mixin],
+            created:function(){
+                document.write("hello china<br>")
+            },
+            methods: {
+                func_1:function(){
+                    document.write("func_1 from vue's instance<br>")
+                }
+            }
+        })
+        document.write("<br>使用方法<br>")
+        vm.func_1();
+        vm.func_2();
+    </script>
+</body>
+</html>
